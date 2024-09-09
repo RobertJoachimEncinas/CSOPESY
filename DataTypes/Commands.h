@@ -48,27 +48,27 @@ void printHeader() {
 }
 
 int cmd_initialize() {
-    std::cout << "Initialize command recognized. Doing something.\n";
+    std::cout << "initialize command recognized. Doing something.\n";
     return 0;
 }
 
 int cmd_screen() {
-    std::cout << "Screen command recognized. Doing something.\n";
+    std::cout << "screen command recognized. Doing something.\n";
     return 0;
 }
 
 int cmd_scheduler_test() {
-    std::cout << "Scheduler-Test command recognized. Doing something.\n";
+    std::cout << "scheduler-test command recognized. Doing something.\n";
     return 0;
 }
 
 int cmd_scheduler_stop() {
-    std::cout << "Scheduler-Stop command recognized. Doing something.\n";
+    std::cout << "scheduler-stop command recognized. Doing something.\n";
     return 0;
 }
 
 int cmd_report_util() {
-    std::cout << "Report-Util command recognized. Doing something.\n";
+    std::cout << "report-util command recognized. Doing something.\n";
     return 0;
 }
 
