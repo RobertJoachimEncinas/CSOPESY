@@ -48,27 +48,27 @@ void printHeader() {
 }
 
 int cmd_initialize() {
-    std::cout << "Initialize called\n";
+    std::cout << "Initialize command recognized. Doing something.\n";
     return 0;
 }
 
 int cmd_screen() {
-    std::cout << "Screen called\n";
+    std::cout << "Screen command recognized. Doing something.\n";
     return 0;
 }
 
 int cmd_scheduler_test() {
-    std::cout << "Scheduler-Test called\n";
+    std::cout << "Scheduler-Test command recognized. Doing something.\n";
     return 0;
 }
 
 int cmd_scheduler_stop() {
-    std::cout << "Scheduler-Stop called\n";
+    std::cout << "Scheduler-Stop command recognized. Doing something.\n";
     return 0;
 }
 
 int cmd_report_util() {
-    std::cout << "Report-Util called\n";
+    std::cout << "Report-Util command recognized. Doing something.\n";
     return 0;
 }
 
@@ -82,8 +82,7 @@ int cmd_exit() {
     return 0;
 }
 
-using commands = std::function<int()>;
-const std::map<std::string, commands> commandMap {
+std::map<std::string, std::function<int()>> commandMap {
     { "initialize", cmd_initialize },
     { "screen", cmd_screen },
     { "scheduler-test", cmd_scheduler_test },
