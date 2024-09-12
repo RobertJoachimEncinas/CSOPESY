@@ -16,5 +16,7 @@ int main() {
         } else {
             std::cout << "Error! Unrecognized command\n";
         }
+
+        return 0;
     }
 }
