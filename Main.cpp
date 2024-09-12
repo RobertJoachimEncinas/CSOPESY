@@ -63,17 +63,17 @@ int main() {
         
         if(input.compare("exit") == 0) {
             running = false;
-        } else if(input.compare("initialize")) {
+        } else if(input.compare("initialize") == 0) {
             cmd_initialize();
-        } else if(input.compare("screen")) {
+        } else if(input.compare("screen") == 0) {
             cmd_screen();
-        } else if(input.compare("scheduler-test")) {
+        } else if(input.compare("scheduler-test") == 0) {
             cmd_scheduler_test();
-        } else if(input.compare("scheduler-stop")) {
+        } else if(input.compare("scheduler-stop") == 0) {
             cmd_scheduler_stop();
-        } else if(input.compare("report-util")) {
+        } else if(input.compare("report-util") == 0) {
             cmd_report_util();
-        } else if(input.compare("clear")) {
+        } else if(input.compare("clear") == 0) {
             cmd_clear();
         } else {
             std::cout << "Error! Unrecognized command\n";
