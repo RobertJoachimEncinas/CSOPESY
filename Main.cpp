@@ -89,7 +89,7 @@ void cmd_screen_r(const std::string& process_name) {
             commandsValid = false; // Set flag to false
             system("cls");
             std::cout << "Process Name: " << process_name << "\n";
-            std::cout << "Current line of instruction / Total line of instruction: "
+            std::cout << "Current line: "
                 << process.current_instruction << " / "
                 << process.total_instructions << "\n";
             std::cout << "Timestamp: " << process.timestamp << "\n";
