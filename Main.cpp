@@ -1,5 +1,5 @@
-#include"Utils/Display.h"
-#include"DataTypes/System.h"
+#include "UI/Display.h"
+#include "System/System.h"
 
 int main() {
     std::string input;

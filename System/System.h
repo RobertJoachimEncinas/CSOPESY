@@ -1,8 +1,8 @@
 /*
     This file defines all code related to the OS environment
 */
-#include"Process.h"
-#include<vector>
+#include "../DataTypes/Process.h"
+#include <vector>
 #include <sstream>
 #include <ctime>
 #include <iomanip>
@@ -51,13 +51,7 @@ class System
         void cmd_screen_r(const std::string& process_name) {
             for (const auto& process : processes) {
                 if (process.name == process_name) {
-                    commandsValid = false; // Set flag to false
-                    system("cls");
-                    std::cout << "Process Name: " << process_name << "\n";
-                    std::cout << "Current Line: "
-                        << process.current_instruction << " / "
-                        << process.total_instructions << "\n";
-                    std::cout << "Timestamp: " << process.timestamp << "\n";
+                    cmd_screen(process);
                     return;
                 }
             }

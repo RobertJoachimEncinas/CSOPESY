@@ -4,7 +4,7 @@
 
 #include<string>
 #include<iostream>
-#include"../DataTypes/Styles.h"
+#include"Styles.h"
 
 void printColored(std::string text, TextColor color) {
     std::string color_escape = "\033[";
