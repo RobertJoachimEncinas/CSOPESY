@@ -36,6 +36,13 @@ class System
             }
         }
 
+        void terminate() {
+            scheduler.turnOff();
+            for(int i = 0; i < 4; i++) {
+                (*cores[i]).turnOff();
+            }
+        }
+
         void cmd_initialize() {
             std::cout << "initialize command recognized. Doing something.\n";
         }
@@ -143,6 +150,7 @@ class System
                     cmd_clear();
                 }
                 else {
+                    terminate();
                     std::exit(0);
                 }
             }

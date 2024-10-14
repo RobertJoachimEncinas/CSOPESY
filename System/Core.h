@@ -11,21 +11,24 @@ class Core {
         std::thread t;
         Process* current_process;
         std::atomic<bool> activeFlag;
+        std::atomic<bool> coreOn;
 
     public:
         Core(int core_num) {
             this->core_num = core_num;
             current_process = nullptr;
             activeFlag.store(false);
+            coreOn.store(false);
         }
 
         void start() {
+            coreOn.store(true);
             t = std::thread(run, this);
         }
 
         void run() {
             bool programCompleted = false;
-            while(true) {
+            while(coreOn.load()) {
                 if(activeFlag.load()) {
                     programCompleted = current_process->executeLine();
                     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -47,6 +50,17 @@ class Core {
             this->current_process = p;
             p->assign(this->core_num);
             this->activeFlag.store(true);
+        }
+
+        void turnOff() {
+            coreOn.store(false);
+            join();
+        }
+
+        void join() {
+            if(this->t.joinable()) {
+                this->t.join();
+            }
         }
 };
 #endif

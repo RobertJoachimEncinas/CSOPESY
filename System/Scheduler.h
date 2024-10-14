@@ -9,19 +9,22 @@ class Scheduler {
         TSQueue ready_queue;
         std::vector<Core*>* cores;
         std::thread t;
+        std::atomic<bool> active;
 
     public:
         Scheduler(std::vector<Core*>* cores) {
             this->cores = cores;
+            this->active.store(false);
         }
 
         void start() {
+            this->active.store(true);
             t = std::thread(run, this);
         }
 
         void run() {
             bool assigned = false;
-            while(true) {
+            while(active.load()) {
                 Process* p = ready_queue.pop(); //Blocks until there's something to take
                 assigned = false; //Set default unassigned
 
@@ -41,6 +44,17 @@ class Scheduler {
 
         void enqueue(Process* p) {
             ready_queue.push(p);
+        }
+
+        void turnOff() {
+            active.store(false);
+            join();
+        }
+        
+        void join() {
+            if(this->t.joinable()) {
+                this->t.join();
+            }
         }
 };
 #endif
