@@ -12,13 +12,15 @@ class Core {
         Process* current_process;
         std::atomic<bool> activeFlag;
         std::atomic<bool> coreOn;
+        std::string (*getCurrentTimestamp)();
 
     public:
-        Core(int core_num) {
+        Core(int core_num, std::string (*getCurrentTimestamp)()) {
             this->core_num = core_num;
             current_process = nullptr;
             activeFlag.store(false);
             coreOn.store(false);
+            this->getCurrentTimestamp = getCurrentTimestamp;
         }
 
         void start() {
@@ -30,7 +32,7 @@ class Core {
             bool programCompleted = false;
             while(coreOn.load()) {
                 if(activeFlag.load()) {
-                    programCompleted = current_process->executeLine();
+                    programCompleted = current_process->executeLine(getCurrentTimestamp());
                     std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 
                     if(programCompleted) {

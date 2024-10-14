@@ -15,26 +15,39 @@ class Process {
         std::string timestamp;
         bool completed;
         int core;
+        std::string logFilePath;
 
         Process() {}
 
         Process(std::string name, int total_instructions, std::string timestamp) {
             this->name = name;
-            this->current_instruction = 1;
+            this->current_instruction = 0;
             this->total_instructions = total_instructions;
             this->timestamp = timestamp;
             this->completed = false;
             this->core = -1;
+            this->logFilePath = "./Logs/" + name + ".txt";
+
+            FILE* f = fopen(logFilePath.c_str(), "w");
+
+            fprintf(f, "Process name: %s", name.c_str());
+            fprintf(f, "Logs:\n\n");
+
+            fclose(f);
         }
 
-        bool executeLine() {
-            this->completed = current_instruction >= total_instructions;
-
-            if(this->completed) {
-                return true;
-            }
+        bool executeLine(std::string exec_timestamp) {
+            //Execution
             current_instruction++;
-            return false;
+            log(exec_timestamp);
+            this->completed = current_instruction >= total_instructions;
+            return this->completed;
+        }
+
+        void log(std::string exec_timestamp) {
+            FILE* f = fopen(logFilePath.c_str(), "a");
+            fprintf(f, "(%s) Core:%d \"Hello world from %s\"\n", exec_timestamp.c_str(), core, name.c_str());
+            fclose(f);
         }
 
         void assign(int core) {

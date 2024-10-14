@@ -22,7 +22,7 @@ class System
         //Constructor
         System(): scheduler(std::addressof(cores)) {
             for(int i = 0; i < 4; i++) {
-                cores.push_back(new Core(i));
+                cores.push_back(new Core(i, this->getCurrentTimestamp));
             }
 
             boot();
@@ -37,10 +37,13 @@ class System
         }
 
         void terminate() {
+            std::cout << 1;
             scheduler.turnOff();
+            std::cout << 2;
             for(int i = 0; i < 4; i++) {
                 (*cores[i]).turnOff();
             }
+            std::cout << 3;
         }
 
         void cmd_initialize() {
@@ -107,7 +110,7 @@ class System
             scheduler.enqueue(newProcess.get());
         }
 
-        std::string getCurrentTimestamp() {
+        std::string static getCurrentTimestamp() {
             std::time_t t = std::time(&t);
             std::tm now = *localtime(&t);
 
