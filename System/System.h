@@ -46,6 +46,7 @@ class System
                 cmd_screen_add(process + std::to_string(i));
             }
             cmd_clear();
+            commandsValid = true;
         }
 
         void cmd_scheduler_stop() {
