@@ -20,16 +20,22 @@ class Scheduler {
         }
 
         void run() {
+            bool assigned = false;
             while(true) {
                 Process* p = ready_queue.pop(); //Blocks until there's something to take
+                assigned = false; //Set default unassigned
 
                 //Ping all cores to see who can take
-                for(int i = 0; i < cores->size(); i++) {
-                    if(!((*cores->at(i)).isActive())) {
-                        (*cores->at(i)).assignProcess(p);
-                        break;
-                    }       
+                while(!assigned) {
+                    for(int i = 0; i < cores->size(); i++) {
+                        if(!((*cores->at(i)).isActive())) {
+                            (*cores->at(i)).assignProcess(p);
+                            assigned = true;
+                            break;
+                        }       
+                    }
                 }
+                
             }
         }
 

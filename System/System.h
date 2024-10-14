@@ -45,6 +45,7 @@ class System
             for(int i = 0; i < 10; i++) {
                 cmd_screen_add(process + std::to_string(i));
             }
+            cmd_clear();
         }
 
         void cmd_scheduler_stop() {

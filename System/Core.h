@@ -28,13 +28,12 @@ class Core {
             while(true) {
                 if(activeFlag.load()) {
                     programCompleted = current_process->executeLine();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 
                     if(programCompleted) {
                         current_process->assign(-1);
                         current_process = nullptr;
                         activeFlag.store(false);
-                        break;
                     }
                 }
             }

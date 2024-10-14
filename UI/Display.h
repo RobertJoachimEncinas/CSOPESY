@@ -39,7 +39,7 @@ void printProcesses(std::vector<Process> runningProcesses, std::vector<Process> 
         printf("%-11s %-30s Core: %s      %d / %d\n", process.name.c_str(), ("(" + process.timestamp + ")").c_str(), inCore.c_str(), process.current_instruction, process.total_instructions);
     }
     
-    std::cout << "Finished Processes:\n";
+    std::cout << "\nFinished Processes:\n";
     for (const auto& process : completedProcesses) {
         printf("%-11s %-30s Finished      %d / %d\n", process.name.c_str(), ("(" + process.timestamp + ")").c_str(), process.current_instruction, process.total_instructions);
     }
