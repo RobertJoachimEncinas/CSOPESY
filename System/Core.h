@@ -32,6 +32,7 @@ class Core {
                     if(programCompleted) {
                         std::cout << "completed\n";
                         current_process = nullptr;
+                        activeFlag.store(false);
                         break;
                     }
                 }
