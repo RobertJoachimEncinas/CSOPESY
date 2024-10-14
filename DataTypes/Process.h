@@ -30,7 +30,7 @@ class Process {
 
             FILE* f = fopen(logFilePath.c_str(), "w");
 
-            fprintf(f, "Process name: %s", name.c_str());
+            fprintf(f, "Process name: %s\n", name.c_str());
             fprintf(f, "Logs:\n\n");
 
             fclose(f);
