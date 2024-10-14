@@ -24,8 +24,19 @@ class Scheduler {
 
         void run() {
             bool assigned = false;
+            Process* p;
+
             while(active.load()) {
-                Process* p = ready_queue.pop(); //Blocks until there's something to take
+                p = nullptr;
+
+                while(p == nullptr) {
+                    p = ready_queue.pop(); //Blocks until there's something to take
+                
+                    if(!active.load()) {
+                        return;
+                    }
+                }
+
                 assigned = false; //Set default unassigned
 
                 //Ping all cores to see who can take
@@ -38,7 +49,6 @@ class Scheduler {
                         }       
                     }
                 }
-                
             }
         }
 

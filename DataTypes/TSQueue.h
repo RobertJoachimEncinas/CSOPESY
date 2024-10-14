@@ -4,6 +4,7 @@
 #include <queue>
 #include <mutex>
 #include <iostream>
+#include <chrono>
 #include <condition_variable>
 #include "Process.h"
 
@@ -15,11 +16,19 @@ class TSQueue {
 
     public:
         Process* pop() {
+            Process* p;
             std::unique_lock<std::mutex> l(mtx);
-            cv.wait(l, [this] { return !queue.empty();});
-            Process* p = queue.front();
-            queue.pop();
+            cv.wait_for(l, std::chrono::milliseconds(500), [this] { return !queue.empty();});
+
+            if(!queue.empty()) {
+                p = queue.front();
+                queue.pop();
+            } else {
+                p = nullptr;
+            }
+            
             l.unlock();
+
             return p;
         }
 

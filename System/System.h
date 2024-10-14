@@ -37,13 +37,10 @@ class System
         }
 
         void terminate() {
-            std::cout << 1;
             scheduler.turnOff();
-            std::cout << 2;
             for(int i = 0; i < 4; i++) {
                 (*cores[i]).turnOff();
             }
-            std::cout << 3;
         }
 
         void cmd_initialize() {
@@ -182,6 +179,7 @@ class System
                     }
 
                     printProcesses(runningProcesses, finishedProcesses);
+                    cmd_clear();
                 }   
                 else {
                     std::cout << "Error! Correct usage: screen -s <process_name> or screen -r <process_name> or screen -ls\n";
