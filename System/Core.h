@@ -28,9 +28,10 @@ class Core {
             while(true) {
                 if(activeFlag.load()) {
                     programCompleted = current_process->executeLine();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 
                     if(programCompleted) {
-                        std::cout << "completed\n";
+                        current_process->assign(-1);
                         current_process = nullptr;
                         activeFlag.store(false);
                         break;
@@ -45,8 +46,8 @@ class Core {
 
         void assignProcess(Process* p) {
             this->current_process = p;
+            p->assign(this->core_num);
             this->activeFlag.store(true);
-            std::cout << "Process with pId: " << p << " assigned to core " << core_num << "\n";
         }
 };
 #endif

@@ -5,6 +5,7 @@
 #define PROCESS
 #include <string>
 #include <iostream>
+#include <chrono>
 
 class Process {
     public:
@@ -13,6 +14,7 @@ class Process {
         int total_instructions;
         std::string timestamp;
         bool completed;
+        int core;
 
         Process() {}
 
@@ -22,12 +24,21 @@ class Process {
             this->total_instructions = total_instructions;
             this->timestamp = timestamp;
             this->completed = false;
+            this->core = -1;
         }
 
         bool executeLine() {
+            this->completed = current_instruction >= total_instructions;
+
+            if(this->completed) {
+                return true;
+            }
             current_instruction++;
-            this->completed = current_instruction > total_instructions;
-            return completed;
+            return false;
+        }
+
+        void assign(int core) {
+            this->core = core;
         }
 };
 #endif

@@ -26,7 +26,6 @@ class Scheduler {
                 //Ping all cores to see who can take
                 for(int i = 0; i < cores->size(); i++) {
                     if(!((*cores->at(i)).isActive())) {
-                        std::cout << "Assigning to core: " << i << "\n";
                         (*cores->at(i)).assignProcess(p);
                         break;
                     }       
@@ -35,7 +34,6 @@ class Scheduler {
         }
 
         void enqueue(Process* p) {
-            std::cout << "Enqueueing: " << p << "\n";
             ready_queue.push(p);
         }
 };

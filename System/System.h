@@ -41,7 +41,10 @@ class System
         }
 
         void cmd_scheduler_test() {
-            std::cout << "scheduler-test command recognized. Doing something.\n";
+            std::string process = "process";
+            for(int i = 0; i < 10; i++) {
+                cmd_screen_add(process + std::to_string(i));
+            }
         }
 
         void cmd_scheduler_stop() {
@@ -59,7 +62,7 @@ class System
 
         void cmd_screen(Process process) {
             commandsValid = false; // Set flag to false
-            //system("cls");
+            system("cls");
             std::cout << "Process Name: " << process.name << "\n";
             std::cout << "Current Line: "
                 << process.current_instruction << " / "
@@ -87,12 +90,11 @@ class System
             }
 
             // If no duplicates, create and add the new process
-            std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, 10, getCurrentTimestamp());
+            std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, 100, getCurrentTimestamp());
             processes.push_back(newProcess);
             cmd_screen(*newProcess);  // Display the new process info
 
             //Add to scheduler
-            std::cout << "Scheduling: " << newProcess.get() << "\n";
             scheduler.enqueue(newProcess.get());
         }
 
@@ -154,8 +156,22 @@ class System
                     std::string process_name = tokens[2];
                     cmd_screen_r(process_name);
                 }
+                else if (tokens.size() == 2 && tokens[1] == "-ls") {
+                    std::vector<Process> runningProcesses;
+                    std::vector<Process> finishedProcesses;
+
+                    for(const auto& process: processes) {
+                        if(process->completed) {
+                            finishedProcesses.push_back(*process);
+                        } else {
+                            runningProcesses.push_back(*process);
+                        }
+                    }
+
+                    printProcesses(runningProcesses, finishedProcesses);
+                }   
                 else {
-                    std::cout << "Error! Correct usage: screen -s <process_name> or screen -r <process_name>\n";
+                    std::cout << "Error! Correct usage: screen -s <process_name> or screen -r <process_name> or screen -ls\n";
                 }
             }
             else if (command == "scheduler-test") {

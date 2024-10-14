@@ -18,7 +18,6 @@ class TSQueue {
             std::unique_lock<std::mutex> l(mtx);
             cv.wait(l, [this] { return !queue.empty();});
             Process* p = queue.front();
-            std::cout << "Serving: " << p->name << "\n";
             queue.pop();
             l.unlock();
             return p;
@@ -26,7 +25,6 @@ class TSQueue {
 
         void push(Process* p) {
             std::unique_lock<std::mutex> l(mtx);
-            std::cout << "Queueing: " << p->name << "\n";
             queue.push(p);
             l.unlock();
             cv.notify_one();
