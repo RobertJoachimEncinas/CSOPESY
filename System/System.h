@@ -1,22 +1,41 @@
 /*
     This file defines all code related to the OS environment
 */
-#include "../DataTypes/Process.h"
+#include "../DataTypes/TSQueue.h"
+#include "../System/Scheduler.h"
+#include "../System/Core.h"
+#include "../UI/Display.h"
 #include <vector>
 #include <sstream>
 #include <ctime>
 #include <iomanip>
+#include <memory>
 
 class System
 {
-    private:
-        std::vector<Process> processes;
-        bool commandsValid = true; // Flag to track if commands are valid
     public:
+        std::vector<std::unique_ptr<Process>> processes;
+        bool commandsValid = true; // Flag to track if commands are valid
+        Scheduler scheduler;
+        std::vector<Core*> cores;
+    
         //Constructor
-        System() {}
+        System(): scheduler(std::addressof(cores)) {
+            for(int i = 0; i < 4; i++) {
+                cores.push_back(new Core(i));
+            }
+
+            boot();
+        }
 
         //Methods
+        void boot() {
+            scheduler.start();
+            for(int i = 0; i < 4; i++) {
+                (*(cores.at(i))).start();
+            }
+        }
+
         void cmd_initialize() {
             std::cout << "initialize command recognized. Doing something.\n";
         }
@@ -38,7 +57,7 @@ class System
             printHeader();
         }
 
-        void cmd_screen(const Process& process) {
+        void cmd_screen(Process process) {
             commandsValid = false; // Set flag to false
             system("cls");
             std::cout << "Process Name: " << process.name << "\n";
@@ -50,8 +69,8 @@ class System
 
         void cmd_screen_r(const std::string& process_name) {
             for (const auto& process : processes) {
-                if (process.name == process_name) {
-                    cmd_screen(process);
+                if (process->name == process_name) {
+                    cmd_screen(*process);
                     return;
                 }
             }
@@ -61,20 +80,20 @@ class System
         void cmd_screen_add(const std::string& process_name) {
             // Check if the process already exists
             for (const auto& process : processes) {
-                if (process.name == process_name) {
+                if (process->name == process_name) {
                     std::cout << "Error! Process " << process_name << " already exists.\n";
                     return;  // Exit the function if a duplicate is found
                 }
             }
 
             // If no duplicates, create and add the new process
-            Process newProcess;
-            newProcess.name = process_name;
-            newProcess.current_instruction = 1;   // Start at instruction 1
-            newProcess.total_instructions = 10;   // Example total instructions
-            newProcess.timestamp = getCurrentTimestamp();
+            std::unique_ptr<Process> newProcess = std::make_unique<Process>(process_name, 10, getCurrentTimestamp());
             processes.push_back(newProcess);
-            cmd_screen(newProcess);  // Display the new process info
+            cmd_screen(*newProcess);  // Display the new process info
+
+            //Add to scheduler
+            std::cout << "Scheduling: " << newProcess.get() << "\n";
+            scheduler.enqueue(newProcess.get());
         }
 
         std::string getCurrentTimestamp() {
