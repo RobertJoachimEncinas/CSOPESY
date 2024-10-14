@@ -32,6 +32,7 @@ class Core {
                     if(programCompleted) {
                         std::cout << "completed\n";
                         current_process = nullptr;
+                        break;
                     }
                 }
             }
@@ -44,7 +45,7 @@ class Core {
         void assignProcess(Process* p) {
             this->current_process = p;
             this->activeFlag.store(true);
-            std::cout << "Process with pId: " << p << "assigned\n";
+            std::cout << "Process with pId: " << p << " assigned to core " << core_num << "\n";
         }
 };
 #endif

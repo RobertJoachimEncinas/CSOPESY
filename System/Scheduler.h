@@ -28,6 +28,7 @@ class Scheduler {
                     if(!((*cores->at(i)).isActive())) {
                         std::cout << "Assigning to core: " << i << "\n";
                         (*cores->at(i)).assignProcess(p);
+                        break;
                     }            
                 }
             }

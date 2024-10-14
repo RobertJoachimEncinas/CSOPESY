@@ -14,7 +14,7 @@
 class System
 {
     public:
-        std::vector<std::unique_ptr<Process>> processes;
+        std::vector<std::shared_ptr<Process>> processes;
         bool commandsValid = true; // Flag to track if commands are valid
         Scheduler scheduler;
         std::vector<Core*> cores;
@@ -59,7 +59,7 @@ class System
 
         void cmd_screen(Process process) {
             commandsValid = false; // Set flag to false
-            system("cls");
+            //system("cls");
             std::cout << "Process Name: " << process.name << "\n";
             std::cout << "Current Line: "
                 << process.current_instruction << " / "
@@ -87,7 +87,7 @@ class System
             }
 
             // If no duplicates, create and add the new process
-            std::unique_ptr<Process> newProcess = std::make_unique<Process>(process_name, 10, getCurrentTimestamp());
+            std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, 10, getCurrentTimestamp());
             processes.push_back(newProcess);
             cmd_screen(*newProcess);  // Display the new process info
 

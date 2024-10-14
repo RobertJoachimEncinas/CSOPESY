@@ -26,8 +26,7 @@ class Process {
 
         bool executeLine() {
             current_instruction++;
-            std::cout << "Executed Line!\n";
-            this->completed = current_instruction >= total_instructions;
+            this->completed = current_instruction > total_instructions;
             return completed;
         }
 };
