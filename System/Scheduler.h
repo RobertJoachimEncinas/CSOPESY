@@ -17,6 +17,12 @@ class Scheduler {
             this->active.store(false);
         }
 
+        void assignReadyQueueToCores() {
+            for(int i = 0; i < cores->size(); i++) {
+                cores->at(i)->assignReadyQueue(std::addressof(ready_queue));
+            }
+        }
+
         void start() {
             this->active.store(true);
             t = std::thread(run, this);

@@ -16,14 +16,17 @@ class System
     public:
         std::vector<std::shared_ptr<Process>> processes;
         bool commandsValid = true; // Flag to track if commands are valid
+        int timeQuanta = 3;
         Scheduler scheduler;
         std::vector<Core*> cores;
     
         //Constructor
         System(): scheduler(std::addressof(cores)) {
             for(int i = 0; i < 4; i++) {
-                cores.push_back(new Core(i, this->getCurrentTimestamp));
+                cores.push_back(new Core(i, timeQuanta, this->getCurrentTimestamp));
             }
+
+            scheduler.assignReadyQueueToCores();
 
             boot();
         }
@@ -97,7 +100,6 @@ class System
                     return;  // Exit the function if a duplicate is found
                 }
             }
-
             // If no duplicates, create and add the new process
             std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, 100, getCurrentTimestamp());
             processes.push_back(newProcess);
@@ -179,7 +181,6 @@ class System
                     }
 
                     printProcesses(runningProcesses, finishedProcesses);
-                    cmd_clear();
                 }   
                 else {
                     std::cout << "Error! Correct usage: screen -s <process_name> or screen -r <process_name> or screen -ls\n";
