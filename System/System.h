@@ -19,11 +19,12 @@ class System
         int timeQuanta = 3;
         Scheduler scheduler;
         std::vector<Core*> cores;
+        int clockMod = 1000;
     
         //Constructor
-        System(): scheduler(std::addressof(cores)) {
+        System(): scheduler(std::addressof(cores), clockMod) {
             for(int i = 0; i < 4; i++) {
-                cores.push_back(new Core(i, timeQuanta, this->getCurrentTimestamp));
+                cores.push_back(new Core(i, timeQuanta, clockMod, this->getCurrentTimestamp));
             }
 
             scheduler.assignReadyQueueToCores();

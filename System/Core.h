@@ -11,6 +11,7 @@ private:
     int core_num;
     int internalClock;
     int timeQuanta;
+    int clockMod;
     std::thread t;
     Process* current_process;
     TSQueue* ready_queue;
@@ -27,7 +28,7 @@ private:
     }
 
 public:
-    Core(int core_num, int timeQuanta, std::string (*getCurrentTimestamp)()) {
+    Core(int core_num, int timeQuanta, int clockMod, std::string (*getCurrentTimestamp)()) {
         this->core_num = core_num;
         this->internalClock = 0;
         this->timeQuanta = timeQuanta;
