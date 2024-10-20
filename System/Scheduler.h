@@ -10,13 +10,11 @@ class Scheduler {
         std::vector<Core*>* cores;
         std::thread t;
         std::atomic<bool> active;
-        int clockMod;
 
     public:
-        Scheduler(std::vector<Core*>* cores, int clockMod) {
+        Scheduler(std::vector<Core*>* cores) {
             this->cores = cores;
             this->active.store(false);
-            this->clockMod = clockMod;
         }
 
         void assignReadyQueueToCores() {

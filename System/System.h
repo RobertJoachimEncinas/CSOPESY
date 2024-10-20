@@ -4,6 +4,7 @@
 #include "../DataTypes/TSQueue.h"
 #include "../System/Scheduler.h"
 #include "../System/Core.h"
+#include "../System/SynchronizedClock.h"
 #include "../UI/Display.h"
 #include <vector>
 #include <sstream>
@@ -18,13 +19,14 @@ class System
         bool commandsValid = true; // Flag to track if commands are valid
         int timeQuanta = 3;
         Scheduler scheduler;
+        SynchronizedClock synchronizer;
         std::vector<Core*> cores;
         int clockMod = 1000;
     
         //Constructor
-        System(): scheduler(std::addressof(cores), clockMod) {
+        System(): scheduler(std::addressof(cores)), synchronizer(std::addressof(cores), clockMod) {
             for(int i = 0; i < 4; i++) {
-                cores.push_back(new Core(i, timeQuanta, clockMod, this->getCurrentTimestamp));
+                cores.push_back(new Core(i, timeQuanta, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp));
             }
 
             scheduler.assignReadyQueueToCores();
@@ -34,6 +36,7 @@ class System
 
         //Methods
         void boot() {
+            synchronizer.start();
             scheduler.start();
             for(int i = 0; i < 4; i++) {
                 (*(cores.at(i))).start();
@@ -41,6 +44,7 @@ class System
         }
 
         void terminate() {
+            synchronizer.turnOff();
             scheduler.turnOff();
             for(int i = 0; i < 4; i++) {
                 (*cores[i]).turnOff();

@@ -15,6 +15,7 @@ private:
     std::thread t;
     Process* current_process;
     TSQueue* ready_queue;
+    std::atomic<int>* synchronizerClock;
     std::atomic<bool> activeFlag;
     std::atomic<bool> coreOn;
     std::atomic<bool> preemptedFlag;
@@ -28,15 +29,19 @@ private:
     }
 
 public:
-    Core(int core_num, int timeQuanta, int clockMod, std::string (*getCurrentTimestamp)()) {
+    Core(int core_num, int timeQuanta, int clockMod, std::atomic<int>* synchronizerClock, std::string (*getCurrentTimestamp)()) {
         this->core_num = core_num;
         this->internalClock = 0;
         this->timeQuanta = timeQuanta;
+
         current_process = nullptr;
         activeFlag.store(false);
         coreOn.store(false);
         preemptedFlag.store(false);
+
+        this->synchronizerClock = synchronizerClock;
         this->getCurrentTimestamp = getCurrentTimestamp;
+        this->clockMod = clockMod;
     }
 
     void assignReadyQueue(TSQueue* queue_ptr) {
@@ -51,10 +56,11 @@ public:
     void run() {
         bool programCompleted = false;
         while(coreOn.load()) {
+            while(synchronizerClock->load() == this->internalClock) {} //Halt if at latest time step
+
             if(activeFlag.load()) {
                 programCompleted = current_process->executeLine(getCurrentTimestamp());
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                internalClock++;
 
                 if(internalClock % timeQuanta == 0) {
                     preemptedFlag.store(true);
@@ -69,6 +75,7 @@ public:
                     preemptedFlag.store(false);
                 }
             }
+            internalClock = (internalClock + 1) % clockMod;
         }
     }
 
@@ -83,6 +90,10 @@ public:
         this->activeFlag.store(true);
     }
 
+    bool isCoreOn() {
+        return coreOn.load();
+    }
+
     void turnOff() {
         coreOn.store(false);
         join();
@@ -92,6 +103,10 @@ public:
         if (this->t.joinable()) {
             this->t.join();
         }
+    }
+
+    int getTime() {
+        return this->internalClock;
     }
 };
 #endif
