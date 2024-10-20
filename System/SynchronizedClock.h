@@ -42,7 +42,7 @@ class SynchronizedClock {
 
         void run(){
             while(active.load()) {
-                while(!systemSynced()) {} //Halt to wait for every thread to catch up
+                while(!systemSynced() && active.load()) {} //Halt to wait for every thread to catch up
                 currentClockCycle.store((currentClockCycle.load() + 1) % clockMod);
             }
         }

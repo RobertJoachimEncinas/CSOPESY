@@ -56,7 +56,7 @@ public:
     void run() {
         bool programCompleted = false;
         while(coreOn.load()) {
-            while(synchronizerClock->load() == this->internalClock) {} //Halt if at latest time step
+            while(synchronizerClock->load() == this->internalClock && coreOn.load()) {} //Halt if at latest time step
 
             if(activeFlag.load()) {
                 programCompleted = current_process->executeLine(getCurrentTimestamp());
