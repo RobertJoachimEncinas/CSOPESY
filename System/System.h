@@ -19,7 +19,6 @@ class System
         std::vector<std::shared_ptr<Process>> processes;
         bool commandsValid = true; // Flag to track if commands are valid
         bool initialized = false;
-        int timeQuanta = 3;
         std::vector<Core*> cores;
         int clockMod = 1000;
 
@@ -27,8 +26,7 @@ class System
         SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), clockMod);
         
         //Constructor
-        System() {
-        }
+        System() {}
 
         //Methods
         void boot() {
@@ -82,7 +80,7 @@ class System
                         return;
                     }
                     
-                    num_cpu = std::stoll(tokens[1]);
+                    num_cpu = std::stoi(tokens[1]);
                     if (num_cpu < 1 || num_cpu > 128) {
                         std::cout << "Error! Invalid number of CPUs.\n";
                         return;
@@ -159,7 +157,7 @@ class System
             }
 
             for(int i = 0; i < num_cpu; i++) {
-                cores.push_back(new Core(i, timeQuanta, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp));
+                cores.push_back(new Core(i, quantum_cycles, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp));
             }
             scheduler.assignReadyQueueToCores();
             boot();
@@ -168,7 +166,7 @@ class System
 
         void cmd_scheduler_test() {
             std::string process = "process";
-            for(int i = 0; i < 10; i++) {
+            for(int i = 0; i < 4; i++) {
                 cmd_screen_add(process + std::to_string(i));
             }
             cmd_clear();

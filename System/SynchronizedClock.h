@@ -18,7 +18,7 @@ class SynchronizedClock {
         bool systemSynced() {
             int time = cores->at(0)->getTime();
 
-            for(int i = 1; i < 4; i++) {
+            for(int i = 1; i < cores->size(); i++) {
                 if(cores->at(i)->getTime() != time && cores->at(i)->isCoreOn()) {
                     return false;
                 }

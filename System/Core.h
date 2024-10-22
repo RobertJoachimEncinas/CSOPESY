@@ -29,7 +29,7 @@ private:
     }
 
 public:
-    Core(int core_num, int timeQuanta, int clockMod, std::atomic<int>* synchronizerClock, std::string (*getCurrentTimestamp)()) {
+    Core(int core_num, long long timeQuanta, int clockMod, std::atomic<int>* synchronizerClock, std::string (*getCurrentTimestamp)()) {
         this->core_num = core_num;
         this->internalClock = 0;
         this->timeQuanta = timeQuanta;
