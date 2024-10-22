@@ -2,6 +2,7 @@
     This file defines all code related to the OS environment
 */
 #include "../DataTypes/TSQueue.h"
+#include "../DataTypes/SchedAlgo.h"
 #include "../System/Scheduler.h"
 #include "../System/Core.h"
 #include "../System/SynchronizedClock.h"
@@ -52,7 +53,109 @@ class System
         }
 
         void cmd_initialize() {
-            std::cout << "initialize command recognized. Doing something.\n";
+            FILE* f = fopen("config.txt", "r");
+            int num_cpu;
+            SchedAlgo algorithm;
+            long long quantum_cycles;
+            long long process_freq;
+            long long min_ins;
+            long long max_ins;
+            long long delay_per_exec;
+            long long limit = (long long)1 << 32;
+
+            for (int i = 1; i <= 7; i++) {
+                char buffer[256];
+                fgets(buffer, 256, f);
+                std::vector<std::string> tokens = tokenizeInput(buffer);
+
+                if (tokens.size() != 2) {
+                    std::cout << "Error! Invalid config file. Line " << i << "\n";
+                    return;
+                }
+
+                switch (i)
+                {
+                case 1:
+                    if (tokens[0] != "num-cpu") {
+                        std::cout << "Error! Invalid config file. Line " << i << "\n";
+                        return;
+                    }
+                    
+                    num_cpu = std::stoll(tokens[1]);
+                    if (num_cpu < 1 || num_cpu > 128) {
+                        std::cout << "Error! Invalid number of CPUs.\n";
+                        return;
+                    }
+                    break;
+                case 2:
+                    if (tokens[0] != "scheduler") {
+                        std::cout << "Error! Invalid config file. Line " << i << "\n";
+                        return;
+                    }
+
+                    algorithm = (SchedAlgo) parseSchedAlgo(tokens[1]);
+                    if (algorithm == -1) {
+                        std::cout << "Error! Invalid scheduling algorithm.\n";
+                        return;
+                    }
+                    break;
+                case 3:
+                    if (tokens[0] != "quantum-cycles") {
+                        std::cout << "Error! Invalid config file. Line " << i << "\n";
+                        return;
+                    }
+                    quantum_cycles = std::stoll(tokens[1]);
+                    if (quantum_cycles < 1 || quantum_cycles > limit) {
+                        std::cout << "Error! Invalid quantum cycles.\n";
+                        return;
+                    }
+                    break;
+                case 4:
+                    if (tokens[0] != "batch-process-freq") {
+                        std::cout << "Error! Invalid config file. Line " << i << "\n";
+                        return;
+                    }
+                    process_freq = std::stoll(tokens[1]);
+                    if (process_freq < 1 || process_freq > limit) {
+                        std::cout << "Error! Invalid batch process frequency.\n";
+                        return;
+                    }
+                    break;
+                case 5:
+                    if (tokens[0] != "min-ins") {
+                        std::cout << "Error! Invalid config file. Line " << i << "\n";
+                        return;
+                    }
+                    min_ins = std::stoll(tokens[1]);
+                    if (min_ins < 1 || min_ins > limit) {
+                        std::cout << "Error! Invalid minimum instructions.\n";
+                        return;
+                    }
+                    break;
+                case 6:
+                    if (tokens[0] != "max-ins") {
+                        std::cout << "Error! Invalid config file. Line " << i << "\n";
+                        return;
+                    }
+                    max_ins = std::stoll(tokens[1]);
+                    if (max_ins < 1 || max_ins > limit) {
+                        std::cout << "Error! Invalid maximum instructions.\n";
+                        return;
+                    }
+                    break;
+                case 7:
+                    if (tokens[0] != "delays-per-exec") {
+                        std::cout << "Error! Invalid config file. Line " << i << "\n";
+                        return;
+                    }
+                    delay_per_exec = std::stoll(tokens[1]);
+                    if (delay_per_exec < 0 || delay_per_exec > limit) {
+                        std::cout << "Error! Invalid delay per execution.\n";
+                        return;
+                    }
+                    break;
+                }
+            }
         }
 
         void cmd_scheduler_test() {
