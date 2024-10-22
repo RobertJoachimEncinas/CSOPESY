@@ -18,30 +18,26 @@ class System
     public:
         std::vector<std::shared_ptr<Process>> processes;
         bool commandsValid = true; // Flag to track if commands are valid
+        bool initialized = false;
         int timeQuanta = 3;
-        Scheduler scheduler;
-        SynchronizedClock synchronizer;
         std::vector<Core*> cores;
         int clockMod = 1000;
-    
+
+        Scheduler scheduler = Scheduler(std::addressof(cores));
+        SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), clockMod);
+        
         //Constructor
-        System(): scheduler(std::addressof(cores)), synchronizer(std::addressof(cores), clockMod) {
-            for(int i = 0; i < 4; i++) {
-                cores.push_back(new Core(i, timeQuanta, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp));
-            }
-
-            scheduler.assignReadyQueueToCores();
-
-            boot();
+        System() {
         }
 
         //Methods
         void boot() {
             synchronizer.start();
             scheduler.start();
-            for(int i = 0; i < 4; i++) {
+            for(int i = 0; i < cores.size(); i++) {
                 (*(cores.at(i))).start();
             }
+            std::cout << "System booted successfully.\n";
         }
 
         void terminate() {
@@ -53,6 +49,11 @@ class System
         }
 
         void cmd_initialize() {
+            if (initialized) {
+                std::cout << "Error! System already initialized.\n";
+                return;
+            }
+
             FILE* f = fopen("config.txt", "r");
             int num_cpu;
             SchedAlgo algorithm;
@@ -156,6 +157,13 @@ class System
                     break;
                 }
             }
+
+            for(int i = 0; i < num_cpu; i++) {
+                cores.push_back(new Core(i, timeQuanta, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp));
+            }
+            scheduler.assignReadyQueueToCores();
+            boot();
+            initialized = true;
         }
 
         void cmd_scheduler_test() {

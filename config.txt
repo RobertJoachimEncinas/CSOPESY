@@ -1,4 +1,4 @@
-num-cpu 4
+num-cpu 5
 scheduler "fcfs"
 quantum-cycles 2
 batch-process-freq 1
