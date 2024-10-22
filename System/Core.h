@@ -59,7 +59,7 @@ public:
             while(synchronizerClock->load() == this->internalClock && coreOn.load()) {} //Halt if at latest time step
 
             if(activeFlag.load()) {
-                programCompleted = current_process->executeLine(getCurrentTimestamp());
+                programCompleted = current_process->executeLine(getCurrentTimestamp(), this->core_num);
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
                 if(internalClock % timeQuanta == 0) {
