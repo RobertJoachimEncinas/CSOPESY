@@ -22,6 +22,8 @@ class System
         std::vector<Core*> cores;
         int clockMod = 1000;
 
+        std::string current_process; // Global variable to store the current process
+
         Scheduler scheduler = Scheduler(std::addressof(cores));
         SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), clockMod);
         
@@ -178,7 +180,18 @@ class System
         }
 
         void cmd_report_util() {
-            std::cout << "report-util command recognized. Doing something.\n";
+            std::vector<Process> runningProcesses;
+            std::vector<Process> finishedProcesses;
+
+            for(const auto& process: processes) {
+                if(process->completed) {
+                    finishedProcesses.push_back(*process);
+                } else {
+                    runningProcesses.push_back(*process);
+                }
+            }
+
+            logProcesses(runningProcesses, finishedProcesses);
         }
 
         void cmd_clear() {
@@ -194,6 +207,7 @@ class System
                 << process.current_instruction << " / "
                 << process.total_instructions << "\n";
             std::cout << "Timestamp: " << process.timestamp << "\n";
+            current_process = process.name; // Store process
         }
 
         void cmd_screen_r(const std::string& process_name) {
@@ -255,9 +269,26 @@ class System
 
             std::string command = tokens[0];  // First token is the command
 
-            if (!commandsValid && command != "exit") {
+            if (!commandsValid && command != "exit" && command != "process-smi") {
                 std::cout << "Error! Invalid command.\n";
                 return;
+            }
+
+            if (!commandsValid && command == "process-smi") {
+                for(const auto& process: processes) {
+                    if (process->name == current_process) {
+                        std::cout << "\nProcess: " << process->name << "\n";
+                        std::cout << "ID: " << process->id << "\n\n";
+                        if (process->completed) {
+                            std::cout << "Finished!\n";
+                        }
+                        else {
+                            std::cout << "Current instruction line: " << process->current_instruction << "\n";
+                            std::cout << "Lines of code: " << process->total_instructions << "\n";
+                        }
+                        return;
+                    }
+                }
             }
 
             if (command == "exit") {
