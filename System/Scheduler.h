@@ -3,6 +3,7 @@
 #include "../DataTypes/TSQueue.h"
 #include "./Core.h"
 #include <vector>
+#include <atomic>
 
 class Scheduler {
     private:
@@ -10,9 +11,9 @@ class Scheduler {
         std::vector<Core*>* cores;
         std::thread t;
         std::atomic<bool> active;
-
+        std::atomic<int>* currentSystemClock;
     public:
-        Scheduler(std::vector<Core*>* cores) {
+        Scheduler(std::vector<Core*>* cores, std::atomic<int>* currentSystemClock) {
             this->cores = cores;
             this->active.store(false);
         }
@@ -29,28 +30,26 @@ class Scheduler {
         }
 
         void run() {
-            bool assigned = false;
-            Process* p;
+            bool processIsAssigned;
+            Process* process;
 
             while(active.load()) {
-                p = nullptr;
+                do {
+                    process = readyQueue.pop(); //Blocks until there's something to take
 
-                while(p == nullptr) {
-                    p = readyQueue.pop(); //Blocks until there's something to take
-                
-                    if(!active.load()) {
+                    if (!active.load()) {
                         return;
                     }
-                }
+                } while(process == nullptr);
 
-                assigned = false; //Set default unassigned
+                processIsAssigned = false; //Set default unassigned
 
                 //Ping all cores to see who can take
-                while(!assigned) {
+                while(!processIsAssigned) {
                     for(int i = 0; i < cores->size(); i++) {
                         if(!((*cores->at(i)).isActive())) {
-                            (*cores->at(i)).assignProcess(p);
-                            assigned = true;
+                            (*cores->at(i)).assignProcess(process);
+                            processIsAssigned = true;
                             break;
                         }       
                     }
@@ -58,8 +57,8 @@ class Scheduler {
             }
         }
 
-        void enqueue(Process* p) {
-            readyQueue.push(p);
+        void enqueue(Process* process) {
+            readyQueue.push(process);
         }
 
         void turnOff() {

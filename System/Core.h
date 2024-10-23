@@ -61,8 +61,8 @@ public:
 
             if(activeFlag.load()) {
                 processCompleted = currentProcess->executeLine(getCurrentTimestamp(), this->coreId);
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 coreQuantumCountdown = (coreQuantumCountdown - 1) % clockMod;
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
                 if(coreQuantumCountdown == 0) {
                     preemptedFlag.store(true);
@@ -88,7 +88,6 @@ public:
     void assignProcess(Process* p) {
         this->currentProcess = p;
         p->setCore(this->coreId);
-        this->coreClock = 0;
         this->activeFlag.store(true);
     }
 

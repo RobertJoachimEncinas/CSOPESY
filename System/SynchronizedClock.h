@@ -16,10 +16,8 @@ class SynchronizedClock {
         std::vector<Core*>* cores;
 
         bool systemSynced() {
-            int time = cores->at(0)->getTime();
-
-            for(int i = 1; i < cores->size(); i++) {
-                if(cores->at(i)->getTime() != time && cores->at(i)->isCoreOn()) {
+            for(int i = 0; i < cores->size(); i++) {
+                if(cores->at(i)->getTime() != currentSystemClock && cores->at(i)->isCoreOn()) {
                     return false;
                 }
             }
@@ -43,7 +41,7 @@ class SynchronizedClock {
         void run(){
             while(active.load()) {
                 while(!systemSynced() && active.load()) {} //Halt to wait for every thread to catch up
-                currentSystemClock.store((currentSystemClock.load() + 1) % clockMod);
+                incrementClock();
             }
         }
 
