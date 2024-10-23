@@ -25,9 +25,8 @@ private:
     void removeFromCore() {
         currentProcess->setCore(-1);
         currentProcess = nullptr;
-        this->coreClock = 0;
         activeFlag.store(false);
-        this->coreQuantumCountdown = quantumCycles - 1;
+        this->coreQuantumCountdown = quantumCycles;
     }
 
 public:
@@ -35,7 +34,7 @@ public:
         this->coreId = coreId;
         this->coreClock = 0;
         this->quantumCycles = quantumCycles;
-
+        this->coreQuantumCountdown = quantumCycles;
         currentProcess = nullptr;
         activeFlag.store(false);
         coreOn.store(false);
@@ -62,9 +61,10 @@ public:
 
             if(activeFlag.load()) {
                 processCompleted = currentProcess->executeLine(getCurrentTimestamp(), this->coreId);
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                coreQuantumCountdown = (coreQuantumCountdown - 1) % clockMod;
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-                if(coreClock % quantumCycles == 0) {
+                if(coreQuantumCountdown == 0) {
                     preemptedFlag.store(true);
                 }
 
