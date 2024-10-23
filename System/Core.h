@@ -8,44 +8,46 @@
 class Core
 {
 private:
-    int core_num;
-    int internalClock;
-    int timeQuanta;
-    int clockMod;
+    int coreId;                 // core id number
+    long long coreClock;        // core's internal clock
+    long long quantumCycles;    // number of cycles before rr preempts process
+    long long clockMod;         // modulo for when clock exceeds max value of long long
+    long long coreQuantumCountdown; // countdown for when to preempt process
     std::thread t;
-    Process* current_process;
-    TSQueue* ready_queue;
-    std::atomic<int>* synchronizerClock;
+    Process* currentProcess;
+    TSQueue* readyQueue;
+    std::atomic<int>* currentSystemClock;
     std::atomic<bool> activeFlag;
     std::atomic<bool> coreOn;
     std::atomic<bool> preemptedFlag;
     std::string (*getCurrentTimestamp)();
 
     void removeFromCore() {
-        current_process->assign(-1);
-        current_process = nullptr;
-        this->internalClock = 0;
+        currentProcess->setCore(-1);
+        currentProcess = nullptr;
+        this->coreClock = 0;
         activeFlag.store(false);
+        this->coreQuantumCountdown = quantumCycles - 1;
     }
 
 public:
-    Core(int core_num, long long timeQuanta, int clockMod, std::atomic<int>* synchronizerClock, std::string (*getCurrentTimestamp)()) {
-        this->core_num = core_num;
-        this->internalClock = 0;
-        this->timeQuanta = timeQuanta;
+    Core(int coreId, long long quantumCycles, int clockMod, std::atomic<int>* currentSystemClock, std::string (*getCurrentTimestamp)()) {
+        this->coreId = coreId;
+        this->coreClock = 0;
+        this->quantumCycles = quantumCycles;
 
-        current_process = nullptr;
+        currentProcess = nullptr;
         activeFlag.store(false);
         coreOn.store(false);
         preemptedFlag.store(false);
 
-        this->synchronizerClock = synchronizerClock;
+        this->currentSystemClock = currentSystemClock;
         this->getCurrentTimestamp = getCurrentTimestamp;
         this->clockMod = clockMod;
     }
 
     void assignReadyQueue(TSQueue* queue_ptr) {
-        this->ready_queue = queue_ptr;
+        this->readyQueue = queue_ptr;
     }
 
     void start() {
@@ -54,28 +56,28 @@ public:
     }
 
     void run() {
-        bool programCompleted = false;
+        bool processCompleted = false;
         while(coreOn.load()) {
-            while(synchronizerClock->load() == this->internalClock && coreOn.load()) {} //Halt if at latest time step
+            while(currentSystemClock->load() == this->coreClock && coreOn.load()) {} //Halt if at latest time step
 
             if(activeFlag.load()) {
-                programCompleted = current_process->executeLine(getCurrentTimestamp(), this->core_num);
+                processCompleted = currentProcess->executeLine(getCurrentTimestamp(), this->coreId);
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-                if(internalClock % timeQuanta == 0) {
+                if(coreClock % quantumCycles == 0) {
                     preemptedFlag.store(true);
                 }
 
-                if(programCompleted || preemptedFlag.load()) {
-                    if(!programCompleted) {
-                        ready_queue->push(current_process);
+                if(processCompleted || preemptedFlag.load()) {
+                    if(!processCompleted) {
+                        readyQueue->push(currentProcess);
                     }
 
                     removeFromCore();
                     preemptedFlag.store(false);
                 }
             }
-            internalClock = (internalClock + 1) % clockMod;
+            coreClock = (coreClock + 1) % clockMod;
         }
     }
 
@@ -84,9 +86,9 @@ public:
     }
 
     void assignProcess(Process* p) {
-        this->current_process = p;
-        p->assign(this->core_num);
-        this->internalClock = 0;
+        this->currentProcess = p;
+        p->setCore(this->coreId);
+        this->coreClock = 0;
         this->activeFlag.store(true);
     }
 
@@ -106,7 +108,7 @@ public:
     }
 
     int getTime() {
-        return this->internalClock;
+        return this->coreClock;
     }
 };
 #endif

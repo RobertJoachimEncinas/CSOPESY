@@ -6,7 +6,7 @@
 
 class Scheduler {
     private:
-        TSQueue ready_queue;
+        TSQueue readyQueue;
         std::vector<Core*>* cores;
         std::thread t;
         std::atomic<bool> active;
@@ -19,7 +19,7 @@ class Scheduler {
 
         void assignReadyQueueToCores() {
             for(int i = 0; i < cores->size(); i++) {
-                cores->at(i)->assignReadyQueue(std::addressof(ready_queue));
+                cores->at(i)->assignReadyQueue(std::addressof(readyQueue));
             }
         }
 
@@ -36,7 +36,7 @@ class Scheduler {
                 p = nullptr;
 
                 while(p == nullptr) {
-                    p = ready_queue.pop(); //Blocks until there's something to take
+                    p = readyQueue.pop(); //Blocks until there's something to take
                 
                     if(!active.load()) {
                         return;
@@ -59,7 +59,7 @@ class Scheduler {
         }
 
         void enqueue(Process* p) {
-            ready_queue.push(p);
+            readyQueue.push(p);
         }
 
         void turnOff() {

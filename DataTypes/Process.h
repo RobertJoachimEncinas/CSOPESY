@@ -36,21 +36,21 @@ class Process {
             fclose(f);
         }
 
-        bool executeLine(std::string exec_timestamp, int core_num) {
+        bool executeLine(std::string exec_timestamp, int coreId) {
             //Execution
             current_instruction++;
-            log(exec_timestamp, core_num);
+            log(exec_timestamp, coreId);
             this->completed = current_instruction >= total_instructions;
             return this->completed;
         }
 
-        void log(std::string exec_timestamp, int core_num) {
+        void log(std::string exec_timestamp, int coreId) {
             FILE* f = fopen(logFilePath.c_str(), "a");
-            fprintf(f, "(%s) Core:%d \"Hello world from %s\"\n", exec_timestamp.c_str(), core_num, name.c_str());
+            fprintf(f, "(%s) Core:%d \"Hello world from %s\"\n", exec_timestamp.c_str(), coreId, name.c_str());
             fclose(f);
         }
 
-        void assign(int core) {
+        void setCore(int core) {
             this->core = core;
         }
 };

@@ -9,7 +9,7 @@
 
 class SynchronizedClock {
     private:
-        std::atomic<int> currentClockCycle;
+        std::atomic<int> currentSystemClock;
         std::atomic<bool> active;
         std::thread t;
         int clockMod;
@@ -30,7 +30,7 @@ class SynchronizedClock {
     public:
         SynchronizedClock(std::vector<Core*>* cores, int mod) {
             active.store(false);
-            currentClockCycle.store(0);
+            currentSystemClock.store(0);
             this->cores = cores;
             this->clockMod = mod;
         }
@@ -43,16 +43,16 @@ class SynchronizedClock {
         void run(){
             while(active.load()) {
                 while(!systemSynced() && active.load()) {} //Halt to wait for every thread to catch up
-                currentClockCycle.store((currentClockCycle.load() + 1) % clockMod);
+                currentSystemClock.store((currentSystemClock.load() + 1) % clockMod);
             }
         }
 
         std::atomic<int>* getSyncClock() {
-            return std::addressof(currentClockCycle);
+            return std::addressof(currentSystemClock);
         }
 
         void incrementClock() {
-            currentClockCycle.store((currentClockCycle.load() + 1) % clockMod);
+            currentSystemClock.store((currentSystemClock.load() + 1) % clockMod);
         }
 
         void turnOff() {
