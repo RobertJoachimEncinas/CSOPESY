@@ -21,8 +21,11 @@ class System
         bool initialized = false;
         std::vector<Core*> cores;
         int clockMod = 1000;
+        int totalCores = 0;
 
         std::string current_process; // Global variable to store the current process
+        std::map<std::string, std::vector<std::string>> processHistory; // Map to hold history for each process
+
 
         Scheduler scheduler = Scheduler(std::addressof(cores));
         SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), clockMod);
@@ -157,7 +160,7 @@ class System
                     break;
                 }
             }
-
+            totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
                 cores.push_back(new Core(i, quantum_cycles, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp));
             }
@@ -191,7 +194,7 @@ class System
                 }
             }
 
-            logProcesses(runningProcesses, finishedProcesses);
+            logProcesses(totalCores, runningProcesses, finishedProcesses);
         }
 
         void cmd_clear() {
@@ -202,13 +205,30 @@ class System
         void cmd_screen(Process process) {
             commandsValid = false; // Set flag to false
             system("cls");
-            std::cout << "Process Name: " << process.name << "\n";
-            std::cout << "Current Line: "
-                << process.current_instruction << " / "
-                << process.total_instructions << "\n";
-            std::cout << "Timestamp: " << process.timestamp << "\n";
+            cmd_display_history(process.name);
+
+            if (processHistory[process.name].size() == 0) {
+                std::ostringstream output;
+                output << "Process Name: " << process.name << "\n";
+                output << "Current Line: " << process.current_instruction << " / " << process.total_instructions << "\n";
+                output << "Timestamp: " << process.timestamp << "\n\n";
+                std::cout << output.str();
+                processHistory[process.name].push_back(output.str());
+
+                return;
+            }
             current_process = process.name; // Store process
         }
+
+
+        void cmd_display_history(const std::string& process_name) {
+            if (processHistory.find(process_name) != processHistory.end()) {
+                for (const auto& entry : processHistory[process_name]) {
+                    std::cout << entry; // Print each entry in the history
+                }
+            }
+        }
+
 
         void cmd_screen_r(const std::string& process_name) {
             for (const auto& process : processes) {
@@ -270,22 +290,36 @@ class System
             std::string command = tokens[0];  // First token is the command
 
             if (!commandsValid && command != "exit" && command != "process-smi") {
-                std::cout << "Error! Invalid command.\n";
+                std::ostringstream output;
+                output << "Error! Invalid command.\n\n";
+                std::cout << output.str();
+
+                std::ostringstream commandOutput;
+                commandOutput << "Enter a command: " << command << "\n";
+                processHistory[current_process].push_back(commandOutput.str());
+                processHistory[current_process].push_back(output.str());
+
                 return;
             }
 
             if (!commandsValid && command == "process-smi") {
                 for(const auto& process: processes) {
                     if (process->name == current_process) {
-                        std::cout << "\nProcess: " << process->name << "\n";
-                        std::cout << "ID: " << process->id << "\n\n";
+                        std::ostringstream output; 
+                        output << "\nProcess: " << process->name << "\n";
+                        output << "ID: " << process->id << "\n\n";
+                        
                         if (process->completed) {
-                            std::cout << "Finished!\n";
+                            output << "Finished!\n\n";
+                        } else {
+                            output << "Current instruction line: " << process->current_instruction << "\n";
+                            output << "Lines of code: " << process->total_instructions << "\n\n";
                         }
-                        else {
-                            std::cout << "Current instruction line: " << process->current_instruction << "\n";
-                            std::cout << "Lines of code: " << process->total_instructions << "\n";
-                        }
+
+                        std::cout << output.str();
+                        processHistory[process->name].push_back("Enter a command: process-smi\n");
+                        processHistory[process->name].push_back(output.str());
+
                         return;
                     }
                 }
@@ -294,6 +328,7 @@ class System
             if (command == "exit") {
                 if (!commandsValid) {
                     commandsValid = true;
+                    processHistory[current_process].push_back("Enter a command: exit\n\n");
                     cmd_clear();
                 }
                 else {
@@ -325,7 +360,7 @@ class System
                         }
                     }
 
-                    printProcesses(runningProcesses, finishedProcesses);
+                    printProcesses(totalCores, runningProcesses, finishedProcesses);
                 }   
                 else {
                     std::cout << "Error! Correct usage: screen -s <process_name> or screen -r <process_name> or screen -ls\n";

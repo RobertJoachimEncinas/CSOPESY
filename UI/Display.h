@@ -32,10 +32,22 @@ void printLine() {
     std::cout << str;
 }
 
-void printProcesses(std::vector<Process> runningProcesses, std::vector<Process> completedProcesses) {
+void printProcesses(int totalCores, std::vector<Process> runningProcesses, std::vector<Process> completedProcesses) {
+    // TODO: change according to the proper format
+    int running_ctr = 0; 
+
+    for (const auto& process : runningProcesses) { 
+        if (process.core != -1) {
+            running_ctr++;
+        }
+    } 
+
+    int cpu_util = static_cast<double>(running_ctr) / totalCores * 100;
+    std::cout << "\nCPU utilization: " << cpu_util << "%\n";
+    std::cout << "Cores used: " << running_ctr << "\n";
+    std::cout << "Cores available: " << totalCores - running_ctr << "\n";
     printColored("-----------------------------------------\n", BLUE);
     std::cout << "Running Processes:\n";
-    // TODO: change according to the proper format
     for (const auto process : runningProcesses) {
         std::string inCore = (process.core == -1) ? "N/A" : std::to_string(process.core);
         printf("%-11s %-30s Core: %-3s      %d / %d\n", process.name.c_str(), ("(" + process.timestamp + ")").c_str(), inCore.c_str(), process.current_instruction, process.total_instructions);
@@ -48,7 +60,7 @@ void printProcesses(std::vector<Process> runningProcesses, std::vector<Process> 
     printColored("-----------------------------------------\n", BLUE);
 }
 
-void logProcesses(std::vector<Process> runningProcesses, std::vector<Process> completedProcesses) {
+void logProcesses(int totalCores, std::vector<Process> runningProcesses, std::vector<Process> completedProcesses) {
     std::ofstream outfile("csopesy-log.txt");
 
     if (!outfile.is_open()) {
@@ -56,6 +68,18 @@ void logProcesses(std::vector<Process> runningProcesses, std::vector<Process> co
         return;
     }
 
+    int running_ctr = 0; 
+
+    for (const auto& process : runningProcesses) { 
+        if (process.core != -1) {
+            running_ctr++;
+        }
+    } 
+
+    int cpu_util = static_cast<double>(running_ctr) / totalCores * 100;
+    outfile << "CPU utilization: " << cpu_util << "%\n";
+    outfile << "Cores used: " << running_ctr << "\n";
+    outfile << "Cores available: " << totalCores - running_ctr << "\n";
     outfile << "-----------------------------------------\n";
     outfile << "Running Processes:\n";
     for (const auto& process : runningProcesses) {
