@@ -4,6 +4,7 @@
 #include <thread>
 #include <atomic>
 #include "../DataTypes/Process.h"
+#include "../DataTypes/SchedAlgo.h"
 
 class Core
 {
@@ -21,6 +22,7 @@ private:
     std::atomic<bool> coreOn;
     std::atomic<bool> preemptedFlag;
     std::string (*getCurrentTimestamp)();
+    SchedAlgo algorithm;
 
     void removeFromCore() {
         currentProcess->setCore(-1);
@@ -30,11 +32,12 @@ private:
     }
 
 public:
-    Core(int coreId, long long quantumCycles, int clockMod, std::atomic<int>* currentSystemClock, std::string (*getCurrentTimestamp)()) {
+    Core(int coreId, long long quantumCycles, int clockMod, std::atomic<int>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm) {
         this->coreId = coreId;
         this->coreClock = 0;
         this->quantumCycles = quantumCycles;
         this->coreQuantumCountdown = quantumCycles;
+        this->algorithm = algorithm;
         currentProcess = nullptr;
         activeFlag.store(false);
         coreOn.store(false);
@@ -64,7 +67,7 @@ public:
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 coreQuantumCountdown = (coreQuantumCountdown - 1) % clockMod;
 
-                if(coreQuantumCountdown == 0) {
+                if(coreQuantumCountdown == 0 && algorithm == RR) {
                     preemptedFlag.store(true);
                 }
 

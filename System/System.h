@@ -162,7 +162,7 @@ class System
             }
             totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
-                cores.push_back(new Core(i, quantum_cycles, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp));
+                cores.push_back(new Core(i, quantum_cycles, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm));
             }
             scheduler.assignReadyQueueToCores();
             boot();
