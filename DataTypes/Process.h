@@ -16,11 +16,14 @@ class Process {
         bool completed;
         int core;
         std::string logFilePath;
+        int id;
+        static int last_id;
 
         Process() {}
 
         Process(std::string name, int total_instructions, std::string timestamp) {
             this->name = name;
+            this->id = last_id++;;
             this->current_instruction = 0;
             this->total_instructions = total_instructions;
             this->timestamp = timestamp;
@@ -54,4 +57,6 @@ class Process {
             this->core = core;
         }
 };
+int Process::last_id = 0;
+
 #endif
