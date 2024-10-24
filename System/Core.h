@@ -12,12 +12,11 @@ private:
     int coreId;                 // core id number
     long long coreClock;        // core's internal clock
     long long quantumCycles;    // number of cycles before rr preempts process
-    long long clockMod;         // modulo for when clock exceeds max value of long long
     long long coreQuantumCountdown; // countdown for when to preempt process
     std::thread t;
     Process* currentProcess;
     TSQueue* readyQueue;
-    std::atomic<int>* currentSystemClock;
+    std::atomic<long long>* currentSystemClock;
     std::atomic<bool> activeFlag;
     std::atomic<bool> coreOn;
     std::atomic<bool> preemptedFlag;
@@ -32,7 +31,7 @@ private:
     }
 
 public:
-    Core(int coreId, long long quantumCycles, int clockMod, std::atomic<int>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm) {
+    Core(int coreId, long long quantumCycles, std::atomic<long long>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm) {
         this->coreId = coreId;
         this->coreClock = 0;
         this->quantumCycles = quantumCycles;
@@ -45,7 +44,6 @@ public:
 
         this->currentSystemClock = currentSystemClock;
         this->getCurrentTimestamp = getCurrentTimestamp;
-        this->clockMod = clockMod;
     }
 
     void assignReadyQueue(TSQueue* queue_ptr) {
@@ -65,7 +63,7 @@ public:
             if(activeFlag.load()) {
                 processCompleted = currentProcess->executeLine(getCurrentTimestamp(), this->coreId);
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                coreQuantumCountdown = (coreQuantumCountdown - 1) % clockMod;
+                coreQuantumCountdown = (coreQuantumCountdown - 1) % LLONG_MAX;
 
                 if(coreQuantumCountdown == 0 && algorithm == RR) {
                     preemptedFlag.store(true);
@@ -80,7 +78,7 @@ public:
                     preemptedFlag.store(false);
                 }
             }
-            coreClock = (coreClock + 1) % clockMod;
+            coreClock = (coreClock + 1) % LLONG_MAX;
         }
     }
 
@@ -109,7 +107,7 @@ public:
         }
     }
 
-    int getTime() {
+    long long getTime() {
         return this->coreClock;
     }
 };

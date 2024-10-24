@@ -9,10 +9,9 @@
 
 class SynchronizedClock {
     private:
-        std::atomic<int> currentSystemClock;
+        std::atomic<long long> currentSystemClock;
         std::atomic<bool> active;
         std::thread t;
-        int clockMod;
         std::vector<Core*>* cores;
 
         bool systemSynced() {
@@ -26,11 +25,10 @@ class SynchronizedClock {
         }
 
     public:
-        SynchronizedClock(std::vector<Core*>* cores, int mod) {
+        SynchronizedClock(std::vector<Core*>* cores) {
             active.store(false);
             currentSystemClock.store(0);
             this->cores = cores;
-            this->clockMod = mod;
         }
 
         void start() {
@@ -45,12 +43,12 @@ class SynchronizedClock {
             }
         }
 
-        std::atomic<int>* getSyncClock() {
+        std::atomic<long long>* getSyncClock() {
             return std::addressof(currentSystemClock);
         }
 
         void incrementClock() {
-            currentSystemClock.store((currentSystemClock.load() + 1) % clockMod);
+            currentSystemClock.store((currentSystemClock.load() + 1) % LLONG_MAX);
         }
 
         void turnOff() {

@@ -20,15 +20,14 @@ class System
         bool commandsValid = true; // Flag to track if commands are valid
         bool initialized = false;
         std::vector<Core*> cores;
-        int clockMod = 1000;
         int totalCores = 0;
 
         std::string current_process; // Global variable to store the current process
         std::map<std::string, std::vector<std::string>> processHistory; // Map to hold history for each process
 
 
-        SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), clockMod);
-        Scheduler scheduler = Scheduler(std::addressof(cores), synchronizer.getSyncClock());
+        SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores));
+        Scheduler scheduler = Scheduler(std::addressof(cores));
         
         //Constructor
         System() {}
@@ -79,96 +78,96 @@ class System
 
                 switch (i)
                 {
-                case 1:
-                    if (tokens[0] != "num-cpu") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    
-                    num_cpu = std::stoi(tokens[1]);
-                    if (num_cpu < 1 || num_cpu > 128) {
-                        std::cout << "Error! Invalid number of CPUs.\n";
-                        return;
-                    }
-                    break;
-                case 2:
-                    if (tokens[0] != "scheduler") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
+                    case 1:
+                        if (tokens[0] != "num-cpu") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        
+                        num_cpu = std::stoi(tokens[1]);
+                        if (num_cpu < 1 || num_cpu > 128) {
+                            std::cout << "Error! Invalid number of CPUs.\n";
+                            return;
+                        }
+                        break;
+                    case 2:
+                        if (tokens[0] != "scheduler") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
 
-                    algorithm = (SchedAlgo) parseSchedAlgo(tokens[1]);
-                    if (algorithm == -1) {
-                        std::cout << "Error! Invalid scheduling algorithm.\n";
-                        return;
-                    }
-                    break;
-                case 3:
-                    if (tokens[0] != "quantum-cycles") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    quantum_cycles = std::stoll(tokens[1]);
-                    if (quantum_cycles < 1 || quantum_cycles > limit) {
-                        std::cout << "Error! Invalid quantum cycles.\n";
-                        return;
-                    }
-                    break;
-                case 4:
-                    if (tokens[0] != "batch-process-freq") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    process_freq = std::stoll(tokens[1]);
-                    if (process_freq < 1 || process_freq > limit) {
-                        std::cout << "Error! Invalid batch process frequency.\n";
-                        return;
-                    }
-                    break;
-                case 5:
-                    if (tokens[0] != "min-ins") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    min_ins = std::stoll(tokens[1]);
-                    if (min_ins < 1 || min_ins > limit) {
-                        std::cout << "Error! Invalid minimum instructions.\n";
-                        return;
-                    }
-                    break;
-                case 6:
-                    if (tokens[0] != "max-ins") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    max_ins = std::stoll(tokens[1]);
-                    if (max_ins < 1 || max_ins > limit) {
-                        std::cout << "Error! Invalid maximum instructions.\n";
-                        return;
-                    }
-                    break;
-                case 7:
-                    if (tokens[0] != "delays-per-exec") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    delay_per_exec = std::stoll(tokens[1]);
-                    if (delay_per_exec < 0 || delay_per_exec > limit) {
-                        std::cout << "Error! Invalid delay per execution.\n";
-                        return;
-                    }
-                    break;
+                        algorithm = (SchedAlgo) parseSchedAlgo(tokens[1]);
+                        if (algorithm == -1) {
+                            std::cout << "Error! Invalid scheduling algorithm.\n";
+                            return;
+                        }
+                        break;
+                    case 3:
+                        if (tokens[0] != "quantum-cycles") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        quantum_cycles = std::stoll(tokens[1]);
+                        if (quantum_cycles < 1 || quantum_cycles > limit) {
+                            std::cout << "Error! Invalid quantum cycles.\n";
+                            return;
+                        }
+                        break;
+                    case 4:
+                        if (tokens[0] != "batch-process-freq") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        process_freq = std::stoll(tokens[1]);
+                        if (process_freq < 1 || process_freq > limit) {
+                            std::cout << "Error! Invalid batch process frequency.\n";
+                            return;
+                        }
+                        break;
+                    case 5:
+                        if (tokens[0] != "min-ins") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        min_ins = std::stoll(tokens[1]);
+                        if (min_ins < 1 || min_ins > limit) {
+                            std::cout << "Error! Invalid minimum instructions.\n";
+                            return;
+                        }
+                        break;
+                    case 6:
+                        if (tokens[0] != "max-ins") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        max_ins = std::stoll(tokens[1]);
+                        if (max_ins < 1 || max_ins > limit) {
+                            std::cout << "Error! Invalid maximum instructions.\n";
+                            return;
+                        }
+                        break;
+                    case 7:
+                        if (tokens[0] != "delays-per-exec") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        delay_per_exec = std::stoll(tokens[1]);
+                        if (delay_per_exec < 0 || delay_per_exec > limit) {
+                            std::cout << "Error! Invalid delay per execution.\n";
+                            return;
+                        }
+                        break;
                 }
             }
             totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
-                cores.push_back(new Core(i, quantum_cycles, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm));
+                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm));
             }
             scheduler.assignReadyQueueToCores();
             boot();
             initialized = true;
         }
-
+        
         void cmd_scheduler_test() {
             std::string process = "process";
             for(int i = 0; i < 10; i++) {

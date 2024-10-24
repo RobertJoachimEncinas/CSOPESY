@@ -13,7 +13,7 @@ class Scheduler {
         std::atomic<bool> active;
         std::atomic<int>* currentSystemClock;
     public:
-        Scheduler(std::vector<Core*>* cores, std::atomic<int>* currentSystemClock) {
+        Scheduler(std::vector<Core*>* cores) {
             this->cores = cores;
             this->active.store(false);
         }
