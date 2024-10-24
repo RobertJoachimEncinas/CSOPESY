@@ -1,5 +1,4 @@
-#ifndef TSQUEUE
-#define TSQUEUE
+#pragma once
 
 #include <queue>
 #include <mutex>
@@ -39,5 +38,3 @@ class TSQueue {
             cv.notify_one();
         }
 };
-
-#endif

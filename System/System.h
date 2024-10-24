@@ -4,6 +4,7 @@
 #include "../DataTypes/TSQueue.h"
 #include "../DataTypes/SchedAlgo.h"
 #include "../System/Scheduler.h"
+#include "../System/Tester.h"
 #include "../System/Core.h"
 #include "../System/SynchronizedClock.h"
 #include "../UI/Display.h"
@@ -15,21 +16,24 @@
 
 class System
 {
-    public:
+    private:
         std::vector<std::shared_ptr<Process>> processes;
-        bool commandsValid = true; // Flag to track if commands are valid
-        bool initialized = false;
+        bool isInMainConsole = true; // Flag to track if commands are valid
+        bool isInitialized = false;
         std::vector<Core*> cores;
-        int clockMod = 1000;
         int totalCores = 0;
+        long long processMinIns = 100;
+        long long processMaxIns = 100;
+        long long processFreq = 1;
 
         std::string current_process; // Global variable to store the current process
         std::map<std::string, std::vector<std::string>> processHistory; // Map to hold history for each process
 
+        SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), std::addressof(tester));
+        Scheduler scheduler = Scheduler(std::addressof(cores));
+        Tester tester = Tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler), std::addressof(cores));
 
-        SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), clockMod);
-        Scheduler scheduler = Scheduler(std::addressof(cores), synchronizer.getSyncClock());
-        
+    public:    
         //Constructor
         System() {}
 
@@ -52,7 +56,7 @@ class System
         }
 
         void cmd_initialize() {
-            if (initialized) {
+            if (isInitialized) {
                 std::cout << "Error! System already initialized.\n";
                 return;
             }
@@ -79,107 +83,105 @@ class System
 
                 switch (i)
                 {
-                case 1:
-                    if (tokens[0] != "num-cpu") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    
-                    num_cpu = std::stoi(tokens[1]);
-                    if (num_cpu < 1 || num_cpu > 128) {
-                        std::cout << "Error! Invalid number of CPUs.\n";
-                        return;
-                    }
-                    break;
-                case 2:
-                    if (tokens[0] != "scheduler") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
+                    case 1:
+                        if (tokens[0] != "num-cpu") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        
+                        num_cpu = std::stoi(tokens[1]);
+                        if (num_cpu < 1 || num_cpu > 128) {
+                            std::cout << "Error! Invalid number of CPUs.\n";
+                            return;
+                        }
+                        break;
+                    case 2:
+                        if (tokens[0] != "scheduler") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
 
-                    algorithm = (SchedAlgo) parseSchedAlgo(tokens[1]);
-                    if (algorithm == -1) {
-                        std::cout << "Error! Invalid scheduling algorithm.\n";
-                        return;
-                    }
-                    break;
-                case 3:
-                    if (tokens[0] != "quantum-cycles") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    quantum_cycles = std::stoll(tokens[1]);
-                    if (quantum_cycles < 1 || quantum_cycles > limit) {
-                        std::cout << "Error! Invalid quantum cycles.\n";
-                        return;
-                    }
-                    break;
-                case 4:
-                    if (tokens[0] != "batch-process-freq") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    process_freq = std::stoll(tokens[1]);
-                    if (process_freq < 1 || process_freq > limit) {
-                        std::cout << "Error! Invalid batch process frequency.\n";
-                        return;
-                    }
-                    break;
-                case 5:
-                    if (tokens[0] != "min-ins") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    min_ins = std::stoll(tokens[1]);
-                    if (min_ins < 1 || min_ins > limit) {
-                        std::cout << "Error! Invalid minimum instructions.\n";
-                        return;
-                    }
-                    break;
-                case 6:
-                    if (tokens[0] != "max-ins") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    max_ins = std::stoll(tokens[1]);
-                    if (max_ins < 1 || max_ins > limit) {
-                        std::cout << "Error! Invalid maximum instructions.\n";
-                        return;
-                    }
-                    break;
-                case 7:
-                    if (tokens[0] != "delays-per-exec") {
-                        std::cout << "Error! Invalid config file. Line " << i << "\n";
-                        return;
-                    }
-                    delay_per_exec = std::stoll(tokens[1]);
-                    if (delay_per_exec < 0 || delay_per_exec > limit) {
-                        std::cout << "Error! Invalid delay per execution.\n";
-                        return;
-                    }
-                    break;
+                        algorithm = (SchedAlgo) parseSchedAlgo(tokens[1]);
+                        if (algorithm == -1) {
+                            std::cout << "Error! Invalid scheduling algorithm.\n";
+                            return;
+                        }
+                        break;
+                    case 3:
+                        if (tokens[0] != "quantum-cycles") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        quantum_cycles = std::stoll(tokens[1]);
+                        if (quantum_cycles < 1 || quantum_cycles > limit) {
+                            std::cout << "Error! Invalid quantum cycles.\n";
+                            return;
+                        }
+                        break;
+                    case 4:
+                        if (tokens[0] != "batch-process-freq") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        process_freq = std::stoll(tokens[1]);
+                        if (process_freq < 1 || process_freq > limit) {
+                            std::cout << "Error! Invalid batch process frequency.\n";
+                            return;
+                        }
+                        break;
+                    case 5:
+                        if (tokens[0] != "min-ins") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        min_ins = std::stoll(tokens[1]);
+                        if (min_ins < 1 || min_ins > limit) {
+                            std::cout << "Error! Invalid minimum instructions.\n";
+                            return;
+                        }
+                        break;
+                    case 6:
+                        if (tokens[0] != "max-ins") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        max_ins = std::stoll(tokens[1]);
+                        if (max_ins < 1 || max_ins > limit) {
+                            std::cout << "Error! Invalid maximum instructions.\n";
+                            return;
+                        }
+                        break;
+                    case 7:
+                        if (tokens[0] != "delays-per-exec") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            return;
+                        }
+                        delay_per_exec = std::stoll(tokens[1]);
+                        if (delay_per_exec < 0 || delay_per_exec > limit) {
+                            std::cout << "Error! Invalid delay per execution.\n";
+                            return;
+                        }
+                        break;
                 }
             }
             totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
-                cores.push_back(new Core(i, quantum_cycles, clockMod, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm));
+                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec));
             }
             scheduler.assignReadyQueueToCores();
+            processMaxIns = max_ins;
+            processMinIns = min_ins;
+            processFreq = process_freq;
             boot();
-            initialized = true;
+            isInitialized = true;
         }
-
+        
         void cmd_scheduler_test() {
-            std::string process = "process";
-            for(int i = 0; i < 10; i++) {
-                cmd_screen_add(process + std::to_string(i));
-            }
-            cmd_clear();
-            commandsValid = true;
+            tester.start();
         }
 
         void cmd_scheduler_stop() {
-            std::cout << "scheduler-stop command recognized. Doing something.\n";
+            tester.turnOff();
         }
 
         void cmd_report_util() {
@@ -195,6 +197,7 @@ class System
             }
 
             logProcesses(totalCores, runningProcesses, finishedProcesses);
+            std::cout << "\"csopesy-log.txt\" report generated successfully.\n";
         }
 
         void cmd_clear() {
@@ -203,7 +206,7 @@ class System
         }
 
         void cmd_screen(Process process) {
-            commandsValid = false; // Set flag to false
+            isInMainConsole = false; // Set flag to false
             system("cls");
             cmd_display_history(process.name);
 
@@ -214,8 +217,6 @@ class System
                 output << "Timestamp: " << process.timestamp << "\n\n";
                 std::cout << output.str();
                 processHistory[process.name].push_back(output.str());
-
-                return;
             }
             current_process = process.name; // Store process
         }
@@ -240,21 +241,27 @@ class System
             std::cout << "Error! Process " << process_name << " not found.\n";
         }
 
-        void cmd_screen_add(const std::string& process_name) {
+        std::shared_ptr<Process> cmd_screen_add(const std::string& process_name) {
             // Check if the process already exists
+            while(tester.isActive() && !tester.isLocked()) {}
+            tester.lock();
+
             for (const auto& process : processes) {
                 if (process->name == process_name) {
                     std::cout << "Error! Process " << process_name << " already exists.\n";
-                    return;  // Exit the function if a duplicate is found
+                    return nullptr;  // Exit the function if a duplicate is found
                 }
             }
+            // Set random number of instructions
+            long long instructions = processMinIns + (rand() % (processMaxIns - processMinIns + 1));
             // If no duplicates, create and add the new process
-            std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, 100, getCurrentTimestamp());
+            std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp());
             processes.push_back(newProcess);
-            cmd_screen(*newProcess);  // Display the new process info
 
             //Add to scheduler
             scheduler.enqueue(newProcess.get());
+            tester.unlock();
+            return newProcess;
         }
 
         std::string static getCurrentTimestamp() {
@@ -289,60 +296,69 @@ class System
 
             std::string command = tokens[0];  // First token is the command
 
-            if (!commandsValid && command != "exit" && command != "process-smi") {
-                std::ostringstream output;
-                output << "Error! Invalid command.\n\n";
-                std::cout << output.str();
-
-                std::ostringstream commandOutput;
-                commandOutput << "Enter a command: " << command << "\n";
-                processHistory[current_process].push_back(commandOutput.str());
-                processHistory[current_process].push_back(output.str());
-
-                return;
-            }
-
-            if (!commandsValid && command == "process-smi") {
-                for(const auto& process: processes) {
-                    if (process->name == current_process) {
-                        std::ostringstream output; 
-                        output << "\nProcess: " << process->name << "\n";
-                        output << "ID: " << process->id << "\n\n";
-                        
-                        if (process->completed) {
-                            output << "Finished!\n\n";
-                        } else {
-                            output << "Current instruction line: " << process->current_instruction << "\n";
-                            output << "Lines of code: " << process->total_instructions << "\n\n";
-                        }
-
-                        std::cout << output.str();
-                        processHistory[process->name].push_back("Enter a command: process-smi\n");
-                        processHistory[process->name].push_back(output.str());
-
-                        return;
-                    }
-                }
-            }
-
-            if (command == "exit") {
-                if (!commandsValid) {
-                    commandsValid = true;
+            
+            if (!isInMainConsole) {
+                if (command == "exit") {
+                    isInMainConsole = true;
                     processHistory[current_process].push_back("Enter a command: exit\n\n");
                     cmd_clear();
                 }
+                else if (command == "process-smi"){
+                    for(const auto& process: processes) {
+                        if (process->name == current_process) {
+                            std::ostringstream output; 
+                            output << "\nProcess: " << process->name << "\n";
+                            output << "ID: " << process->id << "\n\n";
+                            
+                            if (process->completed) {
+                                output << "Finished!\n\n";
+                            } else {
+                                output << "Current instruction line: " << process->current_instruction << "\n";
+                                output << "Lines of code: " << process->total_instructions << "\n\n";
+                            }
+
+                            std::cout << output.str();
+                            processHistory[process->name].push_back("Enter a command: process-smi\n");
+                            processHistory[process->name].push_back(output.str());
+
+                            return;
+                        }
+                    }
+                } 
                 else {
-                    terminate();
-                    std::exit(0);
-                }
+                    std::ostringstream output;
+                    output << "Error! Invalid command.\n\n";
+                    std::cout << output.str();
+
+                    std::ostringstream commandOutput;
+                    commandOutput << "Enter a command: " << command << "\n";
+                    processHistory[current_process].push_back(commandOutput.str());
+                    processHistory[current_process].push_back(output.str());
+
+                    return;
+                } 
+                
+            }
+            else if (command == "clear") {
+                cmd_clear();
+            }
+            else if (command == "exit") {
+                terminate();
+                std::exit(0);
             }
             else if (command == "initialize") {
                 cmd_initialize();
             }
             else if (command == "screen") {
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    return;
+                }
                 if (tokens.size() == 3 && tokens[1] == "-s") {
                     std::string process_name = tokens[2];
-                    cmd_screen_add(process_name);  // Add new process
+                    std::shared_ptr<Process> newProcess = cmd_screen_add(process_name);  // Add new process
+                    if(newProcess != nullptr)
+                        cmd_screen(*newProcess);  // Display the new process info
                 }
                 else if (tokens.size() == 3 && tokens[1] == "-r") {
                     std::string process_name = tokens[2];
@@ -367,16 +383,25 @@ class System
                 }
             }
             else if (command == "scheduler-test") {
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    return;
+                }
                 cmd_scheduler_test();
             }
             else if (command == "scheduler-stop") {
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    return;
+                }
                 cmd_scheduler_stop();
             }
             else if (command == "report-util") {
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    return;
+                }
                 cmd_report_util();
-            }
-            else if (command == "clear") {
-                cmd_clear();
             }
             else {
                 std::cout << "Error! Unrecognized command\n";

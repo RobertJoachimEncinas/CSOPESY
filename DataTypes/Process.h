@@ -1,8 +1,7 @@
 /*
     This file defines all code related to processes
 */
-#ifndef PROCESS
-#define PROCESS
+#pragma once
 #include <string>
 #include <iostream>
 #include <chrono>
@@ -10,8 +9,8 @@
 class Process {
     public:
         std::string name;
-        int current_instruction;
-        int total_instructions;
+        long long current_instruction;
+        long long total_instructions;
         std::string timestamp;
         bool completed;
         int core;
@@ -21,7 +20,7 @@ class Process {
 
         Process() {}
 
-        Process(std::string name, int total_instructions, std::string timestamp) {
+        Process(std::string name, long long total_instructions, std::string timestamp) {
             this->name = name;
             this->id = last_id++;;
             this->current_instruction = 0;
@@ -58,5 +57,3 @@ class Process {
         }
 };
 int Process::last_id = 0;
-
-#endif
