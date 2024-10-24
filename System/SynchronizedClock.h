@@ -1,5 +1,4 @@
-#ifndef SYNCCLOCK
-#define SYNCCLOCK
+#pragma once
 
 #include "../System/Core.h"
 #include "../System/Scheduler.h"
@@ -62,5 +61,3 @@ class SynchronizedClock {
             }
         }
 };
-
-#endif

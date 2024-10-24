@@ -17,7 +17,7 @@ class System
 {
     public:
         std::vector<std::shared_ptr<Process>> processes;
-        bool commandsValid = true; // Flag to track if commands are valid
+        bool isInMainConsole = true; // Flag to track if commands are valid
         bool initialized = false;
         std::vector<Core*> cores;
         int totalCores = 0;
@@ -183,7 +183,7 @@ class System
                 cmd_screen_add(process + std::to_string(i));
             }
             cmd_clear();
-            commandsValid = true;
+            isInMainConsole = true;
         }
 
         void cmd_scheduler_stop() {
@@ -212,7 +212,7 @@ class System
         }
 
         void cmd_screen(Process process) {
-            commandsValid = false; // Set flag to false
+            isInMainConsole = false; // Set flag to false
             system("cls");
             cmd_display_history(process.name);
 
@@ -223,8 +223,6 @@ class System
                 output << "Timestamp: " << process.timestamp << "\n\n";
                 std::cout << output.str();
                 processHistory[process.name].push_back(output.str());
-
-                return;
             }
             current_process = process.name; // Store process
         }
@@ -249,25 +247,24 @@ class System
             std::cout << "Error! Process " << process_name << " not found.\n";
         }
 
-        void cmd_screen_add(const std::string& process_name) {
+        std::shared_ptr<Process> cmd_screen_add(const std::string& process_name) {
             // Check if the process already exists
             for (const auto& process : processes) {
                 if (process->name == process_name) {
                     std::cout << "Error! Process " << process_name << " already exists.\n";
-                    return;  // Exit the function if a duplicate is found
+                    return nullptr;  // Exit the function if a duplicate is found
                 }
             }
             // Set random number of instructions
             long long instructions = processMinIns + (rand() % (processMaxIns - processMinIns + 1));
-            std::cout << "Process " << process_name << " added with " << instructions << " instructions.\n";
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));  // Sleep for 0.5 seconds
             // If no duplicates, create and add the new process
             std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp());
             processes.push_back(newProcess);
-            cmd_screen(*newProcess);  // Display the new process info
 
             //Add to scheduler
             scheduler.enqueue(newProcess.get());
+
+            return newProcess;
         }
 
         std::string static getCurrentTimestamp() {
@@ -302,52 +299,52 @@ class System
 
             std::string command = tokens[0];  // First token is the command
 
-            if (!commandsValid && command != "exit" && command != "process-smi") {
-                std::ostringstream output;
-                output << "Error! Invalid command.\n\n";
-                std::cout << output.str();
-
-                std::ostringstream commandOutput;
-                commandOutput << "Enter a command: " << command << "\n";
-                processHistory[current_process].push_back(commandOutput.str());
-                processHistory[current_process].push_back(output.str());
-
-                return;
-            }
-
-            if (!commandsValid && command == "process-smi") {
-                for(const auto& process: processes) {
-                    if (process->name == current_process) {
-                        std::ostringstream output; 
-                        output << "\nProcess: " << process->name << "\n";
-                        output << "ID: " << process->id << "\n\n";
-                        
-                        if (process->completed) {
-                            output << "Finished!\n\n";
-                        } else {
-                            output << "Current instruction line: " << process->current_instruction << "\n";
-                            output << "Lines of code: " << process->total_instructions << "\n\n";
-                        }
-
-                        std::cout << output.str();
-                        processHistory[process->name].push_back("Enter a command: process-smi\n");
-                        processHistory[process->name].push_back(output.str());
-
-                        return;
-                    }
-                }
-            }
-
-            if (command == "exit") {
-                if (!commandsValid) {
-                    commandsValid = true;
+            
+            if (!isInMainConsole) {
+                if (command == "exit") {
+                    isInMainConsole = true;
                     processHistory[current_process].push_back("Enter a command: exit\n\n");
                     cmd_clear();
                 }
+                else if (command == "process-smi"){
+                    for(const auto& process: processes) {
+                        if (process->name == current_process) {
+                            std::ostringstream output; 
+                            output << "\nProcess: " << process->name << "\n";
+                            output << "ID: " << process->id << "\n\n";
+                            
+                            if (process->completed) {
+                                output << "Finished!\n\n";
+                            } else {
+                                output << "Current instruction line: " << process->current_instruction << "\n";
+                                output << "Lines of code: " << process->total_instructions << "\n\n";
+                            }
+
+                            std::cout << output.str();
+                            processHistory[process->name].push_back("Enter a command: process-smi\n");
+                            processHistory[process->name].push_back(output.str());
+
+                            return;
+                        }
+                    }
+                } 
                 else {
-                    terminate();
-                    std::exit(0);
-                }
+                    std::ostringstream output;
+                    output << "Error! Invalid command.\n\n";
+                    std::cout << output.str();
+
+                    std::ostringstream commandOutput;
+                    commandOutput << "Enter a command: " << command << "\n";
+                    processHistory[current_process].push_back(commandOutput.str());
+                    processHistory[current_process].push_back(output.str());
+
+                    return;
+                } 
+                
+            }
+            else if (command == "exit") {
+                terminate();
+                std::exit(0);
             }
             else if (command == "initialize") {
                 cmd_initialize();
@@ -355,7 +352,9 @@ class System
             else if (command == "screen") {
                 if (tokens.size() == 3 && tokens[1] == "-s") {
                     std::string process_name = tokens[2];
-                    cmd_screen_add(process_name);  // Add new process
+                    std::shared_ptr<Process> newProcess = cmd_screen_add(process_name);  // Add new process
+                    if(newProcess != nullptr)
+                        cmd_screen(*newProcess);  // Display the new process info
                 }
                 else if (tokens.size() == 3 && tokens[1] == "-r") {
                     std::string process_name = tokens[2];

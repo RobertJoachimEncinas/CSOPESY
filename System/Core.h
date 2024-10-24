@@ -1,5 +1,4 @@
-#ifndef CORE
-#define CORE
+#pragma once
 
 #include <thread>
 #include <atomic>
@@ -111,4 +110,3 @@ public:
         return this->coreClock;
     }
 };
-#endif

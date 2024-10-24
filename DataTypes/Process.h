@@ -1,8 +1,7 @@
 /*
     This file defines all code related to processes
 */
-#ifndef PROCESS
-#define PROCESS
+#pragma once
 #include <string>
 #include <iostream>
 #include <chrono>
@@ -58,5 +57,3 @@ class Process {
         }
 };
 int Process::last_id = 0;
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef SCHEDULER
-#define SCHEDULER
+#pragma once
 #include "../DataTypes/TSQueue.h"
 #include "./Core.h"
 #include <vector>
@@ -11,13 +10,12 @@ class Scheduler {
         std::vector<Core*>* cores;
         std::thread t;
         std::atomic<bool> active;
-        std::atomic<int>* currentSystemClock;
     public:
         Scheduler(std::vector<Core*>* cores) {
             this->cores = cores;
             this->active.store(false);
         }
-
+        
         void assignReadyQueueToCores() {
             for(int i = 0; i < cores->size(); i++) {
                 cores->at(i)->assignReadyQueue(std::addressof(readyQueue));
@@ -72,4 +70,3 @@ class Scheduler {
             }
         }
 };
-#endif
