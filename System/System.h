@@ -21,6 +21,8 @@ class System
         bool initialized = false;
         std::vector<Core*> cores;
         int totalCores = 0;
+        long long processMinIns = 100;
+        long long processMaxIns = 100;
 
         std::string current_process; // Global variable to store the current process
         std::map<std::string, std::vector<std::string>> processHistory; // Map to hold history for each process
@@ -164,12 +166,19 @@ class System
                 cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm));
             }
             scheduler.assignReadyQueueToCores();
+            processMaxIns = max_ins;
+            processMinIns = min_ins;
             boot();
             initialized = true;
         }
         
         void cmd_scheduler_test() {
+            if (!initialized) {
+                std::cout << "Error! System not initialized.\n";
+                return;
+            }
             std::string process = "process";
+            //TODO: EVERY process_freq, create new process
             for(int i = 0; i < 10; i++) {
                 cmd_screen_add(process + std::to_string(i));
             }
@@ -194,6 +203,7 @@ class System
             }
 
             logProcesses(totalCores, runningProcesses, finishedProcesses);
+            std::cout << "\"csopesy-log.txt\" report generated successfully.\n";
         }
 
         void cmd_clear() {
@@ -247,8 +257,12 @@ class System
                     return;  // Exit the function if a duplicate is found
                 }
             }
+            // Set random number of instructions
+            long long instructions = processMinIns + (rand() % (processMaxIns - processMinIns + 1));
+            std::cout << "Process " << process_name << " added with " << instructions << " instructions.\n";
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));  // Sleep for 0.5 seconds
             // If no duplicates, create and add the new process
-            std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, 100, getCurrentTimestamp());
+            std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp());
             processes.push_back(newProcess);
             cmd_screen(*newProcess);  // Display the new process info
 

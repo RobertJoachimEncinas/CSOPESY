@@ -43,6 +43,7 @@ void printProcesses(int totalCores, std::vector<Process> runningProcesses, std::
     } 
 
     int cpu_util = static_cast<double>(running_ctr) / totalCores * 100;
+    cpu_util = cpu_util < 0 ? 0 : cpu_util;
     std::cout << "\nCPU utilization: " << cpu_util << "%\n";
     std::cout << "Cores used: " << running_ctr << "\n";
     std::cout << "Cores available: " << totalCores - running_ctr << "\n";
@@ -77,6 +78,7 @@ void logProcesses(int totalCores, std::vector<Process> runningProcesses, std::ve
     } 
 
     int cpu_util = static_cast<double>(running_ctr) / totalCores * 100;
+    cpu_util = cpu_util < 0 ? 0 : cpu_util;
     outfile << "CPU utilization: " << cpu_util << "%\n";
     outfile << "Cores used: " << running_ctr << "\n";
     outfile << "Cores available: " << totalCores - running_ctr << "\n";
