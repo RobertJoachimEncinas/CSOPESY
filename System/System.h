@@ -19,7 +19,7 @@ class System
     private:
         std::vector<std::shared_ptr<Process>> processes;
         bool isInMainConsole = true; // Flag to track if commands are valid
-        bool initialized = false;
+        bool isInitialized = false;
         std::vector<Core*> cores;
         int totalCores = 0;
         long long processMinIns = 100;
@@ -56,7 +56,7 @@ class System
         }
 
         void cmd_initialize() {
-            if (initialized) {
+            if (isInitialized) {
                 std::cout << "Error! System already initialized.\n";
                 return;
             }
@@ -166,30 +166,18 @@ class System
             }
             totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
-                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm));
+                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec));
             }
             scheduler.assignReadyQueueToCores();
             processMaxIns = max_ins;
             processMinIns = min_ins;
             processFreq = process_freq;
             boot();
-            initialized = true;
+            isInitialized = true;
         }
         
         void cmd_scheduler_test() {
-            if (!initialized) {
-                std::cout << "Error! System not initialized.\n";
-                return;
-            }
-            
-            //TODO: EVERY process_freq, create new process
             tester.start();
-            //std::string process = "process";
-            // for(int i = 0; i < 10; i++) {
-            //     cmd_screen_add(process + std::to_string(i));
-            // }
-            // cmd_clear();
-            // isInMainConsole = true;
         }
 
         void cmd_scheduler_stop() {
@@ -351,6 +339,9 @@ class System
                 } 
                 
             }
+            else if (command == "clear") {
+                cmd_clear();
+            }
             else if (command == "exit") {
                 terminate();
                 std::exit(0);
@@ -359,6 +350,10 @@ class System
                 cmd_initialize();
             }
             else if (command == "screen") {
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    return;
+                }
                 if (tokens.size() == 3 && tokens[1] == "-s") {
                     std::string process_name = tokens[2];
                     std::shared_ptr<Process> newProcess = cmd_screen_add(process_name);  // Add new process
@@ -388,16 +383,25 @@ class System
                 }
             }
             else if (command == "scheduler-test") {
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    return;
+                }
                 cmd_scheduler_test();
             }
             else if (command == "scheduler-stop") {
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    return;
+                }
                 cmd_scheduler_stop();
             }
             else if (command == "report-util") {
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    return;
+                }
                 cmd_report_util();
-            }
-            else if (command == "clear") {
-                cmd_clear();
             }
             else {
                 std::cout << "Error! Unrecognized command\n";

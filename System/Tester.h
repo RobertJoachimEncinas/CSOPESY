@@ -40,7 +40,6 @@ class Tester
             this->active.store(false);
             this->locked.store(false);
             this->processFreq = processFreq;
-            this->processFreqCounter = 1;
             this->processes = processes;
             this->processIdCounter = 0;
             this->processMinIns = processMinIns;
@@ -53,12 +52,11 @@ class Tester
         void start() {
             this->active.store(true);
             testerClock = currentSystemClock->load();
-            this->processFreqCounter = 1;
+            this->processFreqCounter = *processFreq;
             t = std::thread(run, this);
         }
 
         void run() {
-            //TODO: Implement batch loading of processes
             while(active.load()) {
                 while ((!isCoresDone() || currentSystemClock->load() == testerClock) && active.load()) {}
                 if (processFreqCounter == *processFreq) { 
@@ -67,7 +65,6 @@ class Tester
                     while(locked.load()) {}
                     locked.store(true); // Lock during write
 
-                    std::cout << "TESTER: creating new process...\n";
                     // std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Sleep for 1 second
                     // Check if the process already exists
                     std::string process_name = "Process" + std::to_string(processIdCounter);

@@ -12,6 +12,8 @@ private:
     long long coreClock;        // core's internal clock
     long long quantumCycles;    // number of cycles before rr preempts process
     long long coreQuantumCountdown; // processFreqCounter for when to preempt process
+    long long delayPerExec;     // delay per execution
+    long long delayCounter;     // delay counter
     std::thread t;
     Process* currentProcess;
     TSQueue* readyQueue;
@@ -30,7 +32,7 @@ private:
     }
 
 public:
-    Core(int coreId, long long quantumCycles, std::atomic<long long>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm) {
+    Core(int coreId, long long quantumCycles, std::atomic<long long>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm, long long delayPerExec) {
         this->coreId = coreId;
         this->coreClock = 0;
         this->quantumCycles = quantumCycles;
@@ -43,6 +45,8 @@ public:
 
         this->currentSystemClock = currentSystemClock;
         this->getCurrentTimestamp = getCurrentTimestamp;
+        this->delayPerExec = delayPerExec;
+        this->delayCounter = 0;
     }
 
     void assignReadyQueue(TSQueue* queue_ptr) {
@@ -59,26 +63,32 @@ public:
         while(isCoreOn.load()) {
             while(currentSystemClock->load() == this->coreClock && isCoreOn.load()) {} //Halt if at latest time step
 
-            if(isCoreActive.load()) {
-                std::cout << "CORE " << coreId << ": executing line " << currentProcess->current_instruction << "...\n";
-                processCompleted = currentProcess->executeLine(getCurrentTimestamp(), this->coreId);
-                // std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                coreQuantumCountdown = (coreQuantumCountdown - 1) % LLONG_MAX;
+            if(isCoreActive.load()){
+                if(delayCounter == delayPerExec) {
+                    processCompleted = currentProcess->executeLine(getCurrentTimestamp(), this->coreId);
 
-                if(coreQuantumCountdown == 0 && algorithm == RR) {
-                    isPreempted.store(true);
-                }
+                    coreQuantumCountdown--;
 
-                if(processCompleted || isPreempted.load()) {
-                    if(!processCompleted) {
-                        readyQueue->push(currentProcess);
+                    if(coreQuantumCountdown == 0 && algorithm == RR) {
+                        isPreempted.store(true);
                     }
 
-                    removeFromCore();
-                    isPreempted.store(false);
+                    if(processCompleted || isPreempted.load()) {
+                        if(!processCompleted) {
+                            readyQueue->push(currentProcess);
+                        }
+
+                        removeFromCore();
+                        isPreempted.store(false);
+                    }
+
+                    delayCounter = -1;
                 }
+                delayCounter++;
             }
             coreClock = (coreClock + 1) % LLONG_MAX;
+            
+                
         }
     }
 

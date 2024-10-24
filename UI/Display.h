@@ -33,7 +33,6 @@ void printLine() {
 }
 
 void printProcesses(int totalCores, std::vector<Process> runningProcesses, std::vector<Process> completedProcesses) {
-    // TODO: change according to the proper format
     int running_ctr = 0; 
 
     for (const auto& process : runningProcesses) { 
