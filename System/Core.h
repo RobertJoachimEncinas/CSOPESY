@@ -60,8 +60,9 @@ public:
             while(currentSystemClock->load() == this->coreClock && isCoreOn.load()) {} //Halt if at latest time step
 
             if(isCoreActive.load()) {
+                std::cout << "CORE " << coreId << ": executing line " << currentProcess->current_instruction << "...\n";
                 processCompleted = currentProcess->executeLine(getCurrentTimestamp(), this->coreId);
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                // std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 coreQuantumCountdown = (coreQuantumCountdown - 1) % LLONG_MAX;
 
                 if(coreQuantumCountdown == 0 && algorithm == RR) {

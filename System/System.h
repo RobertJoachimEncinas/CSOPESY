@@ -31,7 +31,7 @@ class System
 
         SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), std::addressof(tester));
         Scheduler scheduler = Scheduler(std::addressof(cores));
-        Tester tester = Tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler));
+        Tester tester = Tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler), std::addressof(cores));
 
     public:    
         //Constructor
