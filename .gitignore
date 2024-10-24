@@ -239,5 +239,5 @@ _Pvt_Extensions
 .fake/
 
 Logs/**
+!Logs/.gitkeep
 csopesy-log.txt
-.gitkeep

@@ -4,6 +4,7 @@
 #include "../DataTypes/TSQueue.h"
 #include "../DataTypes/SchedAlgo.h"
 #include "../System/Scheduler.h"
+#include "../System/Tester.h"
 #include "../System/Core.h"
 #include "../System/SynchronizedClock.h"
 #include "../UI/Display.h"
@@ -15,7 +16,7 @@
 
 class System
 {
-    public:
+    private:
         std::vector<std::shared_ptr<Process>> processes;
         bool isInMainConsole = true; // Flag to track if commands are valid
         bool initialized = false;
@@ -23,14 +24,16 @@ class System
         int totalCores = 0;
         long long processMinIns = 100;
         long long processMaxIns = 100;
+        long long processFreq = 1;
 
         std::string current_process; // Global variable to store the current process
         std::map<std::string, std::vector<std::string>> processHistory; // Map to hold history for each process
 
-
-        SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores));
+        SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), std::addressof(tester));
         Scheduler scheduler = Scheduler(std::addressof(cores));
-        
+        Tester tester = Tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler));
+
+    public:    
         //Constructor
         System() {}
 
@@ -168,6 +171,7 @@ class System
             scheduler.assignReadyQueueToCores();
             processMaxIns = max_ins;
             processMinIns = min_ins;
+            processFreq = process_freq;
             boot();
             initialized = true;
         }
@@ -177,17 +181,19 @@ class System
                 std::cout << "Error! System not initialized.\n";
                 return;
             }
-            std::string process = "process";
+            
             //TODO: EVERY process_freq, create new process
-            for(int i = 0; i < 10; i++) {
-                cmd_screen_add(process + std::to_string(i));
-            }
-            cmd_clear();
-            isInMainConsole = true;
+            tester.start();
+            //std::string process = "process";
+            // for(int i = 0; i < 10; i++) {
+            //     cmd_screen_add(process + std::to_string(i));
+            // }
+            // cmd_clear();
+            // isInMainConsole = true;
         }
 
         void cmd_scheduler_stop() {
-            std::cout << "scheduler-stop command recognized. Doing something.\n";
+            tester.turnOff();
         }
 
         void cmd_report_util() {
@@ -249,6 +255,9 @@ class System
 
         std::shared_ptr<Process> cmd_screen_add(const std::string& process_name) {
             // Check if the process already exists
+            while(tester.isActive() && !tester.isLocked()) {}
+            tester.lock();
+
             for (const auto& process : processes) {
                 if (process->name == process_name) {
                     std::cout << "Error! Process " << process_name << " already exists.\n";
@@ -263,7 +272,7 @@ class System
 
             //Add to scheduler
             scheduler.enqueue(newProcess.get());
-
+            tester.unlock();
             return newProcess;
         }
 
