@@ -78,7 +78,6 @@ public:
 
                     if(processCompleted || isPreempted.load()) {
                         if(!processCompleted) {
-                            std::cout << "Process " << currentProcess->name << " pre-empted from core " << coreId << " at " << currentSystemClock->load() << "\n";
                             readyQueue->push(currentProcess);
                         }
 
@@ -102,7 +101,6 @@ public:
     void assignProcess(Process* p) {
         this->currentProcess = p;
         p->setCore(this->coreId);
-        std::cout << "Process " << p->name << " arrived in core " << coreId << " at " << currentSystemClock->load() << "\n";
         this->isCoreActive.store(true);
     }
 
