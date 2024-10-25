@@ -21,6 +21,7 @@ private:
     std::atomic<bool> isCoreActive;
     std::atomic<bool> isCoreOn;
     std::atomic<bool> isPreempted;
+    std::atomic<bool> canProceed;
     std::string (*getCurrentTimestamp)();
     SchedAlgo algorithm;
 
@@ -42,6 +43,7 @@ public:
         isCoreActive.store(false);
         isCoreOn.store(false);
         isPreempted.store(false);
+        canProceed.store(false);
 
         this->currentSystemClock = currentSystemClock;
         this->getCurrentTimestamp = getCurrentTimestamp;
@@ -63,10 +65,11 @@ public:
         while(isCoreOn.load()) {
             while(currentSystemClock->load() == this->coreClock && isCoreOn.load()) {} //Halt if at latest time step
 
+            while(!canProceed.load() && isCoreOn.load()) {} // Wait for scheduler
+
             if(isCoreActive.load()){
                 if(delayCounter == delayPerExec) {
                     processCompleted = currentProcess->executeLine(getCurrentTimestamp(), this->coreId);
-
                     coreQuantumCountdown--;
 
                     if(coreQuantumCountdown == 0 && algorithm == RR) {
@@ -75,6 +78,7 @@ public:
 
                     if(processCompleted || isPreempted.load()) {
                         if(!processCompleted) {
+                            std::cout << "Process " << currentProcess->name << " pre-empted from core " << coreId << " at " << currentSystemClock->load() << "\n";
                             readyQueue->push(currentProcess);
                         }
 
@@ -87,8 +91,7 @@ public:
                 delayCounter++;
             }
             coreClock = (coreClock + 1) % LLONG_MAX;
-            
-                
+            lock(); // Lock self for next iteration
         }
     }
 
@@ -99,6 +102,7 @@ public:
     void assignProcess(Process* p) {
         this->currentProcess = p;
         p->setCore(this->coreId);
+        std::cout << "Process " << p->name << " arrived in core " << coreId << " at " << currentSystemClock->load() << "\n";
         this->isCoreActive.store(true);
     }
 
@@ -115,6 +119,14 @@ public:
         if (this->t.joinable()) {
             this->t.join();
         }
+    }
+
+    void unlock() {
+        this->canProceed.store(true);
+    }
+
+    void lock() {
+        this->canProceed.store(false);
     }
 
     long long getTime() {

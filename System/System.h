@@ -29,13 +29,16 @@ class System
         std::string current_process; // Global variable to store the current process
         std::map<std::string, std::vector<std::string>> processHistory; // Map to hold history for each process
 
-        SynchronizedClock synchronizer = SynchronizedClock(std::addressof(cores), std::addressof(tester));
-        Scheduler scheduler = Scheduler(std::addressof(cores));
-        Tester tester = Tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler), std::addressof(cores));
+        Scheduler scheduler;
+        Tester tester;
+        SynchronizedClock synchronizer;
 
     public:    
         //Constructor
-        System() {}
+        System(): synchronizer(std::addressof(cores), std::addressof(tester), std::addressof(scheduler)),
+        scheduler(std::addressof(cores), synchronizer.getSyncClock()), 
+        tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler))
+        {}
 
         //Methods
         void boot() {
@@ -177,7 +180,7 @@ class System
         }
         
         void cmd_scheduler_test() {
-            tester.start();
+            synchronizer.startTester();
         }
 
         void cmd_scheduler_stop() {

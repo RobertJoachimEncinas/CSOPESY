@@ -6,12 +6,17 @@
 
 class Scheduler {
     private:
+        long long schedulerClock;
         TSQueue readyQueue;
         std::vector<Core*>* cores;
         std::thread t;
         std::atomic<bool> active;
+        std::atomic<long long>* currentSystemClock;
+
     public:
-        Scheduler(std::vector<Core*>* cores) {
+        Scheduler(std::vector<Core*>* cores, std::atomic<long long>* currentSystemClock) {
+            this->schedulerClock = 0;
+            this->currentSystemClock = currentSystemClock;
             this->cores = cores;
             this->active.store(false);
         }
@@ -28,30 +33,22 @@ class Scheduler {
         }
 
         void run() {
-            bool processIsAssigned;
             Process* process;
 
             while(active.load()) {
-                do {
-                    process = readyQueue.pop(); //Blocks until there's something to take
+                while(currentSystemClock->load() == this->schedulerClock && active.load()) {} // Block if not synced
 
-                    if (!active.load()) {
-                        return;
-                    }
-                } while(process == nullptr);
+                for(int i = 0; i < cores->size(); i++) {
+                    if(readyQueue.isEmpty()) {
+                        break; //Ready queue for this time step has all been dispatch already, process anything from screen -s that was not synced in the next timestep
+                    } 
 
-                processIsAssigned = false; //Set default unassigned
-
-                //Ping all cores to see who can take
-                while(!processIsAssigned) {
-                    for(int i = 0; i < cores->size(); i++) {
-                        if(!((*cores->at(i)).isActive())) {
-                            (*cores->at(i)).assignProcess(process);
-                            processIsAssigned = true;
-                            break;
-                        }       
-                    }
+                    if(!((*cores->at(i)).isActive())) { //Check if the core is free
+                        (*cores->at(i)).assignProcess(readyQueue.pop());
+                    }     
                 }
+
+                this->schedulerClock++;
             }
         }
 
@@ -68,5 +65,13 @@ class Scheduler {
             if(this->t.joinable()) {
                 this->t.join();
             }
+        }
+
+        bool isActive() {
+            return this->active.load();
+        }
+
+        long long getTime() {
+            return this->schedulerClock;
         }
 };

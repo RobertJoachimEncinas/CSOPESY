@@ -17,14 +17,10 @@ class TSQueue {
         Process* pop() {
             Process* p;
             std::unique_lock<std::mutex> l(mtx);
-            cv.wait_for(l, std::chrono::milliseconds(500), [this] { return !queue.empty();});
+            cv.wait(l, [this] { return !queue.empty();});
 
-            if(!queue.empty()) {
-                p = queue.front();
-                queue.pop();
-            } else {
-                p = nullptr;
-            }
+            p = queue.front();
+            queue.pop();
             
             l.unlock();
 
@@ -36,5 +32,9 @@ class TSQueue {
             queue.push(p);
             l.unlock();
             cv.notify_one();
+        }
+
+        bool isEmpty() {
+            return queue.empty();
         }
 };

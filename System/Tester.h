@@ -12,6 +12,7 @@ class Tester
         std::thread t;
         std::atomic<bool> active;
         std::atomic<bool> locked;
+        std::atomic<bool> canProceed;
         long long testerClock;
         std::atomic<long long>* currentSystemClock;
         long long* processFreq;
@@ -22,23 +23,14 @@ class Tester
         long long* processMaxIns;
         std::string (*getCurrentTimestamp)();
         Scheduler* scheduler;
-        std::vector<Core*>* cores;
-
-        bool isCoresDone() {
-            for(int i = 0; i < cores->size(); i++) {
-                if(cores->at(i)->getTime() != currentSystemClock->load() && cores->at(i)->isOn()) {
-                    return false;
-                }
-            }
-            return true;
-        }
 
     public:    
-        Tester(std::atomic<long long>* currentSystemClock, long long* processFreq, std::vector<std::shared_ptr<Process>>* processes, long long *processMinIns, long long *processMaxIns, std::string (*getCurrentTimestamp)(), Scheduler* scheduler, std::vector<Core*>* cores) {
+        Tester(std::atomic<long long>* currentSystemClock, long long* processFreq, std::vector<std::shared_ptr<Process>>* processes, long long *processMinIns, long long *processMaxIns, std::string (*getCurrentTimestamp)(), Scheduler* scheduler) {
             this->currentSystemClock = currentSystemClock;
             this->testerClock = 0;
             this->active.store(false);
             this->locked.store(false);
+            this->canProceed.store(false);
             this->processFreq = processFreq;
             this->processes = processes;
             this->processIdCounter = 0;
@@ -46,11 +38,11 @@ class Tester
             this->processMaxIns = processMaxIns;
             this->getCurrentTimestamp = getCurrentTimestamp;
             this->scheduler = scheduler;
-            this->cores = cores;
         }
 
         void start() {
             this->active.store(true);
+            this->canProceed.store(false);
             testerClock = currentSystemClock->load();
             this->processFreqCounter = *processFreq;
             t = std::thread(run, this);
@@ -58,7 +50,8 @@ class Tester
 
         void run() {
             while(active.load()) {
-                while ((!isCoresDone() || currentSystemClock->load() == testerClock) && active.load()) {}
+                while ((!canProceed.load() || currentSystemClock->load() == testerClock) && active.load()) {}
+
                 if (processFreqCounter == *processFreq) { 
                     processFreqCounter = 0;
                     
@@ -88,6 +81,7 @@ class Tester
 
                 testerClock = (testerClock + 1) % LLONG_MAX;
                 processFreqCounter++;      
+                clearCanProceed(); //Reset can proceed for next cycle
             }
         }
 
@@ -120,5 +114,13 @@ class Tester
 
         void unlock() {
             this->locked.store(false);
+        }
+
+        void setCanProceed() {
+            this->canProceed.store(true);
+        }
+
+        void clearCanProceed() {
+            this->canProceed.store(false);
         }
 };
