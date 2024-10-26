@@ -180,11 +180,23 @@ class System
         }
         
         void cmd_scheduler_test() {
+            if(tester.isActive()) {
+                std::cout << "Error! scheduler-test still active!\n";
+                return;
+            }
+
             synchronizer.startTester();
+            std::cout << "Scheduler started\n";
         }
 
         void cmd_scheduler_stop() {
+            if(!tester.isActive()) {
+                std::cout << "Error! scheduler-test is not active!\n";
+                return;
+            }
+
             tester.turnOff();
+            std::cout << "Scheduler stoped\n";
         }
 
         void cmd_report_util() {
@@ -237,6 +249,10 @@ class System
         void cmd_screen_r(const std::string& process_name) {
             for (const auto& process : processes) {
                 if (process->name == process_name) {
+                    if(process->completed) {
+                        break;
+                    }
+
                     cmd_screen(*process);
                     return;
                 }
