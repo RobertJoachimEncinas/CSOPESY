@@ -27,7 +27,6 @@ class System
         long long processFreq = 1;
 
         std::string current_process; // Global variable to store the current process
-        // std::map<std::string, std::vector<std::string>> processHistory; // Map to hold history for each process
         std::map<std::string, std::vector<std::pair<std::string, std::string>>> processHistory;
 
         Scheduler scheduler;
