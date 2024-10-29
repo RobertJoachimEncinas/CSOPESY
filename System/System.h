@@ -339,6 +339,7 @@ class System
             std::vector<std::string> tokens = tokenizeInput(input);
 
             if (tokens.empty()) {
+                processHistory["Main"].emplace_back("Enter a command: \n", "RESET");
                 std::cout << "Error! Empty input.\n";
                 processHistory["Main"].emplace_back("Error! Empty input.\n", "RESET");
                 return;
