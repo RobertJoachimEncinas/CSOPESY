@@ -193,6 +193,7 @@ class System
             processFreq = process_freq;
             boot();
             isInitialized = true;
+            processHistory["Main"].emplace_back("System booted successfully.\n", "RESET");
         }
         
         void cmd_scheduler_test() {
