@@ -298,6 +298,7 @@ class System
                 if (process->name == process_name) {
                     std::cout << "Error! Process " << process_name << " already exists.\n";
                     processHistory["Main"].emplace_back("Error! Process " + process_name + " already exists.\n", "RESET");
+                    tester.unlock();
                     return nullptr;  // Exit the function if a duplicate is found
                 }
             }
