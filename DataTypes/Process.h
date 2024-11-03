@@ -30,18 +30,18 @@ class Process {
             this->core = -1;
             this->logFilePath = "./Logs/" + name + ".txt";
 
-            FILE* f = fopen(logFilePath.c_str(), "w");
+            // FILE* f = fopen(logFilePath.c_str(), "w");
 
-            fprintf(f, "Process name: %s\n", name.c_str());
-            fprintf(f, "Logs:\n\n");
+            // fprintf(f, "Process name: %s\n", name.c_str());
+            // fprintf(f, "Logs:\n\n");
 
-            fclose(f);
+            // fclose(f);
         }
 
         bool executeLine(std::string exec_timestamp, int coreId) {
             //Execution
             current_instruction++;
-            log(exec_timestamp, coreId);
+            //log(exec_timestamp, coreId);
             this->completed = current_instruction >= total_instructions;
             return this->completed;
         }

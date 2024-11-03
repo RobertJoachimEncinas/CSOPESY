@@ -251,14 +251,20 @@ class System
             system("cls");
             cmd_display_history(process.name);
 
-            if (processHistory[process.name].size() == 0) {
-                std::ostringstream output;
-                output << "Process Name: " << process.name << "\n";
-                output << "Current Line: " << process.current_instruction << " / " << process.total_instructions << "\n";
-                output << "Timestamp: " << process.timestamp << "\n\n";
-                std::cout << output.str();
-                processHistory[process.name].emplace_back(output.str(), "RESET");
+            std::ostringstream output; 
+            output << "\nProcess: " << process.name << "\n";
+            output << "ID: " << process.id << "\n\n";
+            
+            if (process.completed) {
+                output << "Finished!\n\n";
+            } else {
+                output << "Current instruction line: " << process.current_instruction << "\n";
+                output << "Lines of code: " << process.total_instructions << "\n\n";
             }
+
+            std::cout << output.str();
+            processHistory[process.name].emplace_back(output.str(), "RESET");
+
             current_process = process.name; // Store process
         }
 
