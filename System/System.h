@@ -196,7 +196,7 @@ class System
             }
 
             tester.turnOff();
-            std::cout << "Scheduler stoped\n";
+            std::cout << "Scheduler stopped\n";
         }
 
         void cmd_report_util() {

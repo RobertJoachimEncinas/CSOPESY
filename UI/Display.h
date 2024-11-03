@@ -61,7 +61,7 @@ void printProcesses(int totalCores, std::vector<Process> runningProcesses, std::
 }
 
 void logProcesses(int totalCores, std::vector<Process> runningProcesses, std::vector<Process> completedProcesses) {
-    std::ofstream outfile("csopesy-log.txt");
+    std::ofstream outfile("./Logs/csopesy-log.txt");
 
     if (!outfile.is_open()) {
         std::cerr << "Error opening file for writing." << std::endl;
