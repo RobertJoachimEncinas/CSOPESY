@@ -27,7 +27,7 @@ class System
         long long processFreq = 1;
 
         std::string current_process; // Global variable to store the current process
-        std::map<std::string, std::vector<std::string>> processHistory; // Map to hold history for each process
+        std::map<std::string, std::vector<std::pair<std::string, std::string>>> processHistory;
 
         Scheduler scheduler;
         Tester tester;
@@ -61,6 +61,7 @@ class System
         void cmd_initialize() {
             if (isInitialized) {
                 std::cout << "Error! System already initialized.\n";
+                processHistory["Main"].emplace_back("Error! System already initialized.\n", "RESET");
                 return;
             }
 
@@ -81,6 +82,7 @@ class System
 
                 if (tokens.size() != 2) {
                     std::cout << "Error! Invalid config file. Line " << i << "\n";
+                    processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                     return;
                 }
 
@@ -89,79 +91,93 @@ class System
                     case 1:
                         if (tokens[0] != "num-cpu") {
                             std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                             return;
                         }
                         
                         num_cpu = std::stoi(tokens[1]);
                         if (num_cpu < 1 || num_cpu > 128) {
                             std::cout << "Error! Invalid number of CPUs.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid number of CPUs.\n", "RESET");
                             return;
                         }
                         break;
                     case 2:
                         if (tokens[0] != "scheduler") {
                             std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                             return;
                         }
 
                         algorithm = (SchedAlgo) parseSchedAlgo(tokens[1]);
                         if (algorithm == -1) {
                             std::cout << "Error! Invalid scheduling algorithm.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid scheduling algorithm.\n", "RESET");
                             return;
                         }
                         break;
                     case 3:
                         if (tokens[0] != "quantum-cycles") {
                             std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                             return;
                         }
                         quantum_cycles = std::stoll(tokens[1]);
                         if (quantum_cycles < 1 || quantum_cycles > limit) {
                             std::cout << "Error! Invalid quantum cycles.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid quantum cycles.\n", "RESET");
                             return;
                         }
                         break;
                     case 4:
                         if (tokens[0] != "batch-process-freq") {
                             std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                             return;
                         }
                         process_freq = std::stoll(tokens[1]);
                         if (process_freq < 1 || process_freq > limit) {
                             std::cout << "Error! Invalid batch process frequency.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid batch process frequency.\n", "RESET");
                             return;
                         }
                         break;
                     case 5:
                         if (tokens[0] != "min-ins") {
                             std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                             return;
                         }
                         min_ins = std::stoll(tokens[1]);
                         if (min_ins < 1 || min_ins > limit) {
                             std::cout << "Error! Invalid minimum instructions.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid minimum instructions.\n", "RESET");
                             return;
                         }
                         break;
                     case 6:
                         if (tokens[0] != "max-ins") {
                             std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                             return;
                         }
                         max_ins = std::stoll(tokens[1]);
                         if (max_ins < 1 || max_ins > limit) {
                             std::cout << "Error! Invalid maximum instructions.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid maximum instructions.\n", "RESET");
                             return;
                         }
                         break;
                     case 7:
                         if (tokens[0] != "delays-per-exec") {
                             std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                             return;
                         }
                         delay_per_exec = std::stoll(tokens[1]);
                         if (delay_per_exec < 0 || delay_per_exec > limit) {
                             std::cout << "Error! Invalid delay per execution.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid delay per execution.\n", "RESET");
                             return;
                         }
                         break;
@@ -177,26 +193,31 @@ class System
             processFreq = process_freq;
             boot();
             isInitialized = true;
+            processHistory["Main"].emplace_back("System booted successfully.\n", "RESET");
         }
         
         void cmd_scheduler_test() {
             if(tester.isActive()) {
                 std::cout << "Error! scheduler-test still active!\n";
+                processHistory["Main"].emplace_back("Error! scheduler-test still active!\n", "RESET");
                 return;
             }
 
             synchronizer.startTester();
             std::cout << "Scheduler started\n";
+            processHistory["Main"].emplace_back("Scheduler started\n", "RESET");
         }
 
         void cmd_scheduler_stop() {
             if(!tester.isActive()) {
                 std::cout << "Error! scheduler-test is not active!\n";
+                processHistory["Main"].emplace_back("Error! scheduler-test is not active!\n", "RESET");
                 return;
             }
 
             tester.turnOff();
             std::cout << "Scheduler stopped\n";
+            processHistory["Main"].emplace_back("Scheduler stoped\n", "RESET");
         }
 
         void cmd_report_util() {
@@ -212,12 +233,17 @@ class System
             }
 
             logProcesses(totalCores, runningProcesses, finishedProcesses);
-            std::cout << "\"csopesy-log.txt\" report generated successfully.\n";
+
+            std::ostringstream output;                
+            output << "\"csopesy-log.txt\" report generated successfully.\n";
+            std::cout << output.str();
+            processHistory["Main"].emplace_back(output.str(), "RESET");
         }
 
         void cmd_clear() {
             system("cls");
             printHeader();
+            cmd_display_history("Main");
         }
 
         void cmd_screen(Process process) {
@@ -231,7 +257,7 @@ class System
                 output << "Current Line: " << process.current_instruction << " / " << process.total_instructions << "\n";
                 output << "Timestamp: " << process.timestamp << "\n\n";
                 std::cout << output.str();
-                processHistory[process.name].push_back(output.str());
+                processHistory[process.name].emplace_back(output.str(), "RESET");
             }
             current_process = process.name; // Store process
         }
@@ -239,8 +265,11 @@ class System
 
         void cmd_display_history(const std::string& process_name) {
             if (processHistory.find(process_name) != processHistory.end()) {
-                for (const auto& entry : processHistory[process_name]) {
-                    std::cout << entry; // Print each entry in the history
+                const auto& processData = processHistory[process_name];
+
+                for (const auto& entry : processData) {
+                    TextColor color = stringToColor(entry.second);
+                    printColored(entry.first, color);
                 }
             }
         }
@@ -268,6 +297,7 @@ class System
             for (const auto& process : processes) {
                 if (process->name == process_name) {
                     std::cout << "Error! Process " << process_name << " already exists.\n";
+                    processHistory["Main"].emplace_back("Error! Process " + process_name + " already exists.\n", "RESET");
                     return nullptr;  // Exit the function if a duplicate is found
                 }
             }
@@ -309,7 +339,9 @@ class System
             std::vector<std::string> tokens = tokenizeInput(input);
 
             if (tokens.empty()) {
+                processHistory["Main"].emplace_back("Enter a command: \n", "RESET");
                 std::cout << "Error! Empty input.\n";
+                processHistory["Main"].emplace_back("Error! Empty input.\n", "RESET");
                 return;
             }
 
@@ -319,7 +351,7 @@ class System
             if (!isInMainConsole) {
                 if (command == "exit") {
                     isInMainConsole = true;
-                    processHistory[current_process].push_back("Enter a command: exit\n\n");
+                    processHistory[current_process].emplace_back("Enter a command: exit\n\n", "RESET");
                     cmd_clear();
                 }
                 else if (command == "process-smi"){
@@ -337,8 +369,8 @@ class System
                             }
 
                             std::cout << output.str();
-                            processHistory[process->name].push_back("Enter a command: process-smi\n");
-                            processHistory[process->name].push_back(output.str());
+                            processHistory[process->name].emplace_back("Enter a command: process-smi\n", "RESET");
+                            processHistory[process->name].emplace_back(output.str(), "RESET");
 
                             return;
                         }
@@ -351,14 +383,15 @@ class System
 
                     std::ostringstream commandOutput;
                     commandOutput << "Enter a command: " << command << "\n";
-                    processHistory[current_process].push_back(commandOutput.str());
-                    processHistory[current_process].push_back(output.str());
+                    processHistory[current_process].emplace_back(commandOutput.str(), "RESET");
+                    processHistory[current_process].emplace_back(output.str(), "RESET");
 
                     return;
                 } 
                 
             }
             else if (command == "clear") {
+                processHistory["Main"].clear();
                 cmd_clear();
             }
             else if (command == "exit") {
@@ -366,21 +399,27 @@ class System
                 std::exit(0);
             }
             else if (command == "initialize") {
+                processHistory["Main"].emplace_back("Enter a command: initialize\n", "RESET");
                 cmd_initialize();
             }
             else if (command == "screen") {
+                processHistory["Main"].emplace_back("Enter a command: "+ input +"\n", "RESET");
+
                 if(!isInitialized) {
                     std::cout << "Error! System not initialized.\n";
+                    processHistory["Main"].emplace_back("Error! System not initialized.\n", "RESET");
                     return;
                 }
                 if (tokens.size() == 3 && tokens[1] == "-s") {
                     std::string process_name = tokens[2];
+
                     std::shared_ptr<Process> newProcess = cmd_screen_add(process_name);  // Add new process
                     if(newProcess != nullptr)
                         cmd_screen(*newProcess);  // Display the new process info
                 }
                 else if (tokens.size() == 3 && tokens[1] == "-r") {
                     std::string process_name = tokens[2];
+                    
                     cmd_screen_r(process_name);
                 }
                 else if (tokens.size() == 2 && tokens[1] == "-ls") {
@@ -395,35 +434,47 @@ class System
                         }
                     }
 
-                    printProcesses(totalCores, runningProcesses, finishedProcesses);
+                    std::vector<std::pair<std::string, std::string>> processDetails = printProcesses(totalCores, runningProcesses, finishedProcesses);
+                    processHistory["Main"].insert(processHistory["Main"].end(), processDetails.begin(), processDetails.end());
                 }   
                 else {
                     std::cout << "Error! Correct usage: screen -s <process_name> or screen -r <process_name> or screen -ls\n";
+                    processHistory["Main"].emplace_back("Error! Correct usage: screen -s <process_name> or screen -r <process_name> or screen -ls\n", "RESET");
                 }
             }
             else if (command == "scheduler-test") {
+                processHistory["Main"].emplace_back("Enter a command: scheduler-test\n", "RESET");
+
                 if(!isInitialized) {
                     std::cout << "Error! System not initialized.\n";
+                    processHistory["Main"].emplace_back("Error! System not initialized.\n", "RESET");
                     return;
                 }
                 cmd_scheduler_test();
             }
             else if (command == "scheduler-stop") {
+                processHistory["Main"].emplace_back("Enter a command: scheduler-stop\n", "RESET");
+
                 if(!isInitialized) {
                     std::cout << "Error! System not initialized.\n";
+                    processHistory["Main"].emplace_back("Error! System not initialized.\n", "RESET");
                     return;
                 }
                 cmd_scheduler_stop();
             }
             else if (command == "report-util") {
+                processHistory["Main"].emplace_back("Enter a command: report-util\n", "RESET");
                 if(!isInitialized) {
                     std::cout << "Error! System not initialized.\n";
+                    processHistory["Main"].emplace_back("Error! System not initialized.\n", "RESET");
                     return;
                 }
                 cmd_report_util();
             }
             else {
+                processHistory["Main"].emplace_back("Enter a command: "+ input +"\n", "RESET");
                 std::cout << "Error! Unrecognized command\n";
+                processHistory["Main"].emplace_back("Error! Unrecognized command\n", "RESET");
             }
         }
 };

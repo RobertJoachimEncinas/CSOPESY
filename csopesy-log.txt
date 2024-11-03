@@ -5,4 +5,7 @@ Cores available: 4
 Running Processes:
 
 Finished Processes:
+Process0 (10/28/2024, 12:15:32 AM) Finished      141 / 141
+Process1 (10/28/2024, 12:15:49 AM) Finished      141 / 141
+Process2 (10/28/2024, 12:15:52 AM) Finished      185 / 185
 -----------------------------------------
