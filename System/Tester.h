@@ -58,7 +58,6 @@ class Tester
                     while(locked.load()) {}
                     locked.store(true); // Lock during write
 
-                    // std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Sleep for 1 second
                     // Check if the process already exists
                     std::string process_name = "Process" + std::to_string(processIdCounter);
                     for (const auto& process : *processes) {
