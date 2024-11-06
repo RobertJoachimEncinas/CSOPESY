@@ -3,8 +3,8 @@
 */
 #pragma once
 #include <string>
-#include <iostream>
 #include <chrono>
+#include "MemoryChunk.h"
 
 class Process {
     public:
@@ -17,10 +17,12 @@ class Process {
         std::string logFilePath;
         int id;
         static int last_id;
+        long long memoryRequired;
+        std::vector<std::shared_ptr<MemoryFrame>> memoryFrames;
 
         Process() {}
 
-        Process(std::string name, long long total_instructions, std::string timestamp) {
+        Process(std::string name, long long total_instructions, std::string timestamp, long long memoryRequired) {
             this->name = name;
             this->id = last_id++;;
             this->current_instruction = 0;
@@ -29,6 +31,8 @@ class Process {
             this->completed = false;
             this->core = -1;
             this->logFilePath = "./Logs/" + name + ".txt";
+            this->memoryRequired = memoryRequired;
+            this->memoryFrames = {};
 
             // FILE* f = fopen(logFilePath.c_str(), "w");
 

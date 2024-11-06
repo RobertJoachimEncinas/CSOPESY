@@ -4,6 +4,7 @@
 #include <atomic>
 #include "../DataTypes/Process.h"
 #include "../DataTypes/SchedAlgo.h"
+#include "MemoryInterface.h"
 
 class Core
 {
@@ -24,6 +25,7 @@ private:
     std::atomic<bool> canProceed;
     std::string (*getCurrentTimestamp)();
     SchedAlgo algorithm;
+    MemoryInterface* memory;
 
     void removeFromCore() {
         currentProcess->setCore(-1);
@@ -33,7 +35,7 @@ private:
     }
 
 public:
-    Core(int coreId, long long quantumCycles, std::atomic<long long>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm, long long delayPerExec) {
+    Core(int coreId, long long quantumCycles, std::atomic<long long>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm, long long delayPerExec, MemoryInterface* memory) {
         this->coreId = coreId;
         this->coreClock = 0;
         this->quantumCycles = quantumCycles;
@@ -49,6 +51,7 @@ public:
         this->getCurrentTimestamp = getCurrentTimestamp;
         this->delayPerExec = delayPerExec;
         this->delayCounter = 0;
+        this->memory = memory;
     }
 
     void assignReadyQueue(TSQueue* queue_ptr) {
@@ -64,7 +67,6 @@ public:
         bool processCompleted = false;
         while(isCoreOn.load()) {
             while(currentSystemClock->load() == this->coreClock && isCoreOn.load()) {} //Halt if at latest time step
-
             while(!canProceed.load() && isCoreOn.load()) {} // Wait for scheduler
 
             if(isCoreActive.load()){
@@ -77,6 +79,8 @@ public:
                     }
 
                     if(processCompleted || isPreempted.load()) {
+                        memory->free(currentProcess->memoryFrames);
+
                         if(!processCompleted) {
                             readyQueue->push(currentProcess);
                         }

@@ -1,6 +1,7 @@
 #pragma once
 #include "../DataTypes/TSQueue.h"
 #include "./Core.h"
+#include "MemoryInterface.h"
 #include <vector>
 #include <atomic>
 
@@ -12,13 +13,15 @@ class Scheduler {
         std::thread t;
         std::atomic<bool> active;
         std::atomic<long long>* currentSystemClock;
+        MemoryInterface* memory;
 
     public:
-        Scheduler(std::vector<Core*>* cores, std::atomic<long long>* currentSystemClock) {
+        Scheduler(std::vector<Core*>* cores, std::atomic<long long>* currentSystemClock, MemoryInterface* memory) {
             this->schedulerClock = 0;
             this->currentSystemClock = currentSystemClock;
             this->cores = cores;
             this->active.store(false);
+            this->memory = memory;
         }
         
         void assignReadyQueueToCores() {
@@ -44,7 +47,13 @@ class Scheduler {
                     } 
 
                     if(!((*cores->at(i)).isActive())) { //Check if the core is free
-                        (*cores->at(i)).assignProcess(readyQueue.pop());
+                        process = readyQueue.pop();
+                        process->memoryFrames = memory->allocate(process->memoryRequired);
+                        if(process->memoryFrames.size() == 0) {
+                            readyQueue.push(process);
+                        } else {
+                            (*cores->at(i)).assignProcess(process);
+                        }
                     }     
                 }
 

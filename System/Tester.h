@@ -21,11 +21,12 @@ class Tester
         long long processIdCounter;
         long long* processMinIns;
         long long* processMaxIns;
+        long long* memoryPerProcess;
         std::string (*getCurrentTimestamp)();
         Scheduler* scheduler;
 
     public:    
-        Tester(std::atomic<long long>* currentSystemClock, long long* processFreq, std::vector<std::shared_ptr<Process>>* processes, long long *processMinIns, long long *processMaxIns, std::string (*getCurrentTimestamp)(), Scheduler* scheduler) {
+        Tester(std::atomic<long long>* currentSystemClock, long long* processFreq, std::vector<std::shared_ptr<Process>>* processes, long long *processMinIns, long long *processMaxIns, std::string (*getCurrentTimestamp)(), Scheduler* scheduler, long long* memoryPerProcess) {
             this->currentSystemClock = currentSystemClock;
             this->testerClock = 0;
             this->active.store(false);
@@ -38,6 +39,7 @@ class Tester
             this->processMaxIns = processMaxIns;
             this->getCurrentTimestamp = getCurrentTimestamp;
             this->scheduler = scheduler;
+            this->memoryPerProcess = memoryPerProcess;
         }
 
         void start() {
@@ -69,7 +71,7 @@ class Tester
                     // Set random number of instructions
                     long long instructions = *processMinIns + (rand() % (*processMaxIns - *processMinIns + 1));
                     // If no duplicates, create and add the new process
-                    std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp());
+                    std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), *memoryPerProcess);
                     processes->push_back(newProcess);
 
                     //Add to scheduler

@@ -25,6 +25,7 @@ class System
         long long processMinIns = 100;
         long long processMaxIns = 100;
         long long processFreq = 1;
+        long long memoryPerProcess = 0;
 
         std::string current_process; // Global variable to store the current process
         std::map<std::string, std::vector<std::pair<std::string, std::string>>> processHistory;
@@ -32,12 +33,12 @@ class System
         Scheduler scheduler;
         Tester tester;
         SynchronizedClock synchronizer;
-
+        MemoryInterface memory;
     public:    
         //Constructor
-        System(): synchronizer(std::addressof(cores), std::addressof(tester), std::addressof(scheduler)),
-        scheduler(std::addressof(cores), synchronizer.getSyncClock()), 
-        tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler))
+        System(): synchronizer(std::addressof(cores), std::addressof(tester), std::addressof(scheduler), std::addressof(memory)),
+        scheduler(std::addressof(cores), synchronizer.getSyncClock(), std::addressof(memory)), 
+        tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler), &memoryPerProcess)
         {}
 
         //Methods
@@ -73,9 +74,12 @@ class System
             long long min_ins;
             long long max_ins;
             long long delay_per_exec;
+            long long maxMem;
+            long long memPerFrame;
+            long long memPerProc;
             long long limit = (long long)1 << 32;
 
-            for (int i = 1; i <= 7; i++) {
+            for (int i = 1; i <= 10; i++) {
                 char buffer[256];
                 fgets(buffer, 256, f);
                 std::vector<std::string> tokens = tokenizeInput(buffer);
@@ -181,16 +185,57 @@ class System
                             return;
                         }
                         break;
+                    case 8: 
+                        if (tokens[0] != "max-overall-mem") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
+                            return;
+                        }
+                        maxMem = std::stoll(tokens[1]);
+                        if (maxMem < 2 || maxMem > limit) {
+                            std::cout << "Error! Invalid maximum overall memory.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid maximum overall memory.\n", "RESET");
+                            return;
+                        }
+                        break;
+                    case 9:
+                        if (tokens[0] != "mem-per-frame") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
+                            return;
+                        }
+                        memPerFrame = std::stoll(tokens[1]);
+                        if (memPerFrame < 2 || memPerFrame > limit) {
+                            std::cout << "Error! Invalid memory per frame.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid memory per frame.\n", "RESET");
+                            return;
+                        }
+                        break;
+                    case 10:
+                        if (tokens[0] != "mem-per-proc") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
+                            return;
+                        }
+                        memPerProc = std::stoll(tokens[1]);
+                        if (memPerProc < 2 || memPerProc > limit) {
+                            std::cout << "Error! Invalid memory per process.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid memory per process.\n", "RESET");
+                            return;
+                        }
+                        break;
                 }
             }
+            memory.initialize(memPerFrame, maxMem);
             totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
-                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec));
+                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec, std::addressof(memory)));
             }
             scheduler.assignReadyQueueToCores();
             processMaxIns = max_ins;
             processMinIns = min_ins;
             processFreq = process_freq;
+            memoryPerProcess = memPerProc;
             boot();
             isInitialized = true;
             processHistory["Main"].emplace_back("System booted successfully.\n", "RESET");
@@ -311,7 +356,7 @@ class System
             // Set random number of instructions
             long long instructions = processMinIns + (rand() % (processMaxIns - processMinIns + 1));
             // If no duplicates, create and add the new process
-            std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp());
+            std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), memoryPerProcess);
             processes.push_back(newProcess);
 
             //Add to scheduler
