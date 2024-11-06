@@ -6,6 +6,8 @@
 #include <atomic>
 #include <thread>
 #include <vector>
+#include <mutex>
+#include <condition_variable>
 
 class SynchronizedClock {
     private:
@@ -16,6 +18,8 @@ class SynchronizedClock {
         std::vector<Core*>* cores;
         Tester* tester;
         Scheduler* scheduler;
+        std::mutex mtx;
+        std::condition_variable cv;
 
         bool coresSynced() {
             for(int i = 0; i < cores->size(); i++) {
@@ -76,6 +80,9 @@ class SynchronizedClock {
 
                 while((!testerSynced() && tester->isActive()) && active.load()) {} //Halt to wait for tester execution if it is active
                 
+                std::unique_lock<std::mutex> input_lock(this->mtx);
+                this->cv.wait_for(input_lock, std::chrono::microseconds(30), [this] { return testerShouldStart.load(); });
+
                 if(testerShouldStart.load() && active.load()) {
                     tester->start();
 
@@ -83,6 +90,8 @@ class SynchronizedClock {
 
                     testerShouldStart.store(false); //Reset to false as tester has already started  
                 } 
+
+                input_lock.unlock();
 
                 incrementClock();
             }
@@ -94,7 +103,6 @@ class SynchronizedClock {
 
         void incrementClock() {
             currentSystemClock.store((currentSystemClock.load() + 1) % LLONG_MAX);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
         void turnOff() {
@@ -109,6 +117,7 @@ class SynchronizedClock {
         }
         
         void startTester() {
+            std::unique_lock<std::mutex> input_lock(this->mtx);
             testerShouldStart.store(true);
         }
 };

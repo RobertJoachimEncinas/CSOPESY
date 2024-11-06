@@ -1,43 +1,33 @@
-#include "./System/System.h"
+#include"./System/MemoryInterface.h"
+#include<thread>
+#include<sstream>
+#include<vector>
+#include<chrono>
 
-std::atomic<int> control(0);
+MemoryInterface mm = MemoryInterface(64, BESTFIT);
 
-class tControl {
-public:
-    int i;
-
-    tControl() {
-        i = 0;
-    }
-};
-
-void runner(int ms, tControl* threadC) {
-    while(threadC->i < 5) {
-        while(control.load() == threadC->i) {}
-        std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-        threadC->i++;
-        std::cout << "PRINT " << threadC->i << std::endl;
-    }
-}
-
-void synchronizer(tControl* c1, tControl* c2) {
-    int i = 0;
-    while(i < 5) {
-        while(c1->i != control.load() || c2->i != control.load()) {}
-        control.store(control.load() + 1);
-        i++;
-    }
+void alloc(int id) {
+    MemoryChunk* x;
+    x = mm.alloc(4);
+    std::ostringstream oss;
+    oss << "From thread " << id << " memory assigned: " << x->toString() << "\n";
+    std::cout << oss.str();
+    mm.free(x);
 }
 
 int main() {
-    tControl c1, c2;
+    int threads = 10;
+    std::vector<std::thread> v;
 
-    std::thread t1(runner, 50, std::addressof(c1));
-    std::thread t2(runner, 250, std::addressof(c2));
-    std::thread sync(synchronizer,std::addressof(c1), std::addressof(c2));
-    
-    t1.join();
-    t2.join();
-    sync.join();
+    for(int i = 0; i < threads; i++) {
+        v.emplace_back(alloc, i);
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+
+    for (auto& t : v) {
+        t.join();
+    }
+
+    mm.printFreeList();
     return 0;
 }
