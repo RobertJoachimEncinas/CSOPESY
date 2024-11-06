@@ -7,7 +7,7 @@
 MemoryInterface mm = MemoryInterface(64, BESTFIT);
 
 void alloc(int id) {
-    MemoryChunk* x;
+    MemoryFrame* x;
     x = mm.alloc(4);
     std::ostringstream oss;
     oss << "From thread " << id << " memory assigned: " << x->toString() << "\n";

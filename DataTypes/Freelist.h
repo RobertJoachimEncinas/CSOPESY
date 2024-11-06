@@ -5,7 +5,7 @@
 
 struct FirstFitComparator
 {
-    bool operator()(const MemoryChunk* x, const MemoryChunk* y) const
+    bool operator()(const MemoryFrame* x, const MemoryFrame* y) const
     {
         return x->startAddress < y->startAddress;
     }
@@ -13,7 +13,7 @@ struct FirstFitComparator
 
 struct BestFitComparator
 {
-    bool operator()(const MemoryChunk* x, const MemoryChunk* y) const
+    bool operator()(const MemoryFrame* x, const MemoryFrame* y) const
     {
         if(x->size == y->size) {
             return x->startAddress < y->startAddress;
@@ -25,18 +25,18 @@ struct BestFitComparator
 
 class FreeList {
 public:
-    virtual MemoryChunk* pop(uint64_t size) { return nullptr; };
-    virtual void remove(MemoryChunk* chunk) {};
-    virtual void push(MemoryChunk* chunk) {};
+    virtual MemoryFrame* pop(uint64_t size) { return nullptr; };
+    virtual void remove(MemoryFrame* chunk) {};
+    virtual void push(MemoryFrame* chunk) {};
     virtual void print() {};
 };
 
 class FirstFitFreeList: public FreeList {
 private:
-    std::set<MemoryChunk*, FirstFitComparator> chunks;
+    std::set<MemoryFrame*, FirstFitComparator> chunks;
 public:
-    MemoryChunk* pop(uint64_t size) override {
-        MemoryChunk* allocated = nullptr;
+    MemoryFrame* pop(uint64_t size) override {
+        MemoryFrame* allocated = nullptr;
 
         for(const auto& chunk: chunks) {
             if(chunk->size == size) {
@@ -54,50 +54,11 @@ public:
         return allocated;
     }
 
-    void remove(MemoryChunk* chunk) override {
+    void remove(MemoryFrame* chunk) override {
         chunks.erase(chunk);
     }
 
-    void push(MemoryChunk* chunk) override {
-        chunks.insert(chunk);
-    }
-
-    void print() {
-        std::cout << "FREE LIST\n";
-        for(const auto& chunk: chunks) {
-            std::cout << chunk->toString() << "\n";
-        }
-    }
-};
-
-class BestFitFreeList: public FreeList {
-private:
-    std::set<MemoryChunk*, BestFitComparator> chunks;
-public:
-    MemoryChunk* pop(uint64_t size) override {
-        MemoryChunk* allocated = nullptr;
-
-        for(const auto& chunk: chunks) {
-            if(chunk->size == size) {
-                allocated = chunk;
-                allocated->isInUse = true;
-                chunks.erase(chunk); //Remove the chunk from the freelist
-                break;
-            } else if(chunk->size > size) {
-                //The original chunk has been resized by getPartition so no need to remove
-                allocated = chunk->getPartition(size); 
-                break;
-            }
-        }
-
-        return allocated;
-    }
-
-    void remove(MemoryChunk* chunk) override {
-        chunks.erase(chunk);
-    }
-
-    void push(MemoryChunk* chunk) override {
+    void push(MemoryFrame* chunk) override {
         chunks.insert(chunk);
     }
 
