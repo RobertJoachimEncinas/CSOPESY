@@ -36,7 +36,7 @@ class System
         MemoryInterface memory;
     public:    
         //Constructor
-        System(): synchronizer(std::addressof(cores), std::addressof(tester), std::addressof(scheduler), std::addressof(memory)),
+        System(): memory(0, 0, getCurrentTimestamp), synchronizer(std::addressof(cores), std::addressof(tester), std::addressof(scheduler), std::addressof(memory)),
         scheduler(std::addressof(cores), synchronizer.getSyncClock(), std::addressof(memory)), 
         tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler), &memoryPerProcess)
         {}

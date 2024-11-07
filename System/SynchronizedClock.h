@@ -49,14 +49,6 @@ class SynchronizedClock {
             return true;
         }
 
-        void printMemory() {
-            std::cout << "Timestamp: (" << currentSystemClock.load() << ")\n";
-            std::cout << "Number of process in memory: " << "CHANGE ME" << "\n";
-            std::cout << "Total external fragmentation in KB: " << "CHANGE ME" << "\n\n";
-            std::cout << "----end---- = " << "CHANGE ME" << "\n\n";
-            std::cout << "----start---- = " << "CHANGE ME" << "\n\n";
-        }
-
     public:
         SynchronizedClock(std::vector<Core*>* cores, Tester* tester, Scheduler* scheduler, MemoryInterface* memory) {
             active.store(false);
@@ -114,7 +106,7 @@ class SynchronizedClock {
 
         void incrementClock() {
             currentSystemClock.store((currentSystemClock.load() + 1) % LLONG_MAX);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
         void turnOff() {

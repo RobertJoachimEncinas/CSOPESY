@@ -48,7 +48,7 @@ class Scheduler {
 
                     if(!((*cores->at(i)).isActive())) { //Check if the core is free
                         process = readyQueue.pop();
-                        process->memoryFrames = memory->allocate(process->memoryRequired);
+                        process->memoryFrames = memory->allocate(process->memoryRequired, process->name);
                         if(process->memoryFrames.size() == 0) {
                             readyQueue.push(process);
                         } else {
