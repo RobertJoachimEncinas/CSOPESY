@@ -6,6 +6,7 @@
 #include<set>
 #include<vector>
 #include<condition_variable>
+#include<sstream>
 #include "../DataTypes/MemoryChunk.h"
 
 struct ProcessMemory {
@@ -149,20 +150,21 @@ class MemoryInterface {
         }
 
         
-        void printMemory() {
+        void printMemory(long long quantum_cycle) {
             MemoryStats stats = computeMemoryStats();
+            std::ostringstream oss;
 
-            std::cout << "Timestamp: (" << getCurrentTimestamp() << ")\n";
-            std::cout << "Number of process in memory: " << stats.processes_in_memory << "\n";
-            std::cout << "Total external fragmentation in KB: " << stats.totalFragmentation << "\n\n";
-            std::cout << "----end---- = " << endAddress << "\n\n";
-
+            std::string fileMemoryPath = "./Logs/memory_stamp_" + std::to_string(quantum_cycle) + ".txt";
+            FILE* f = fopen(fileMemoryPath.c_str(), "a");
+            fprintf(f, "Timestamp: (%s)\n", getCurrentTimestamp().c_str());
+            fprintf(f, "Number of process in memory: %llu\n", stats.processes_in_memory);
+            fprintf(f, "Total external fragmentation in KB: %llu\n", stats.totalFragmentation);
+            fprintf(f, "----end---- = %llu\n\n", endAddress);
             for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
-                std::cout << memoryRegion->endAddress << "\n";
-                std::cout << memoryRegion->process_name << "\n";
-                std::cout << memoryRegion->startAddress << "\n\n";
+                oss << memoryRegion->endAddress << "\n" << memoryRegion->process_name << "\n" << memoryRegion->startAddress << "\n\n";                
             }
-
-            std::cout << "----start---- = " << startAddress << "\n\n";
+            fprintf(f, "%s", oss.str().c_str());
+            fprintf(f, "----start---- = %llu\n\n", startAddress);
+            fclose(f);
         }
-};
+};  

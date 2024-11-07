@@ -72,7 +72,7 @@ class SynchronizedClock {
                 while(!schedulerSynced() && active.load()) {} //Halt to wait for scheduler to dispatch
 
                 if(countdown == 0) {
-                    memory->printMemory();
+                    memory->printMemory(this->currentSystemClock.load());
                     countdown = 5;
                 }
                 countdown--;
@@ -114,7 +114,7 @@ class SynchronizedClock {
 
         void incrementClock() {
             currentSystemClock.store((currentSystemClock.load() + 1) % LLONG_MAX);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
 
         void turnOff() {
