@@ -79,11 +79,11 @@ public:
                     }
 
                     if(processCompleted || isPreempted.load()) {
-                        memory->free(currentProcess->memoryFrames);
-
                         if(!processCompleted) {
                             readyQueue->push(currentProcess);
-                        } 
+                        } else {
+                            memory->free(currentProcess->memoryFrames);
+                        }
 
                         removeFromCore();
                         isPreempted.store(false);

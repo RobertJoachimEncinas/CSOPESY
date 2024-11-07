@@ -62,7 +62,6 @@ class MemoryInterface {
                     }
 
                     unique_processes.insert(frame.get()->owningProcess); //This wont insert if the process is already in the set
-
                 } else {
                     //Frame not in use with a non-default current process signals end of that process' memory region
                     if(currentProcess.process_name != "") { 
@@ -76,6 +75,10 @@ class MemoryInterface {
 
                     stats.totalFragmentation += frame.get()->size;
                 }
+            }
+
+            if(currentProcess.process_name != "") { 
+                stats.processMemoryRegions.push_back(currentProcess);
             }
 
             stats.processes_in_memory = unique_processes.size();
