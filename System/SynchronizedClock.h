@@ -66,8 +66,16 @@ class SynchronizedClock {
         }
 
         void run(){
+            int countdown = 5;
+
             while(active.load()) {
                 while(!schedulerSynced() && active.load()) {} //Halt to wait for scheduler to dispatch
+
+                if(countdown == 0) {
+                    memory->printMemory();
+                    countdown = 5;
+                }
+                countdown--;
 
                 if(!active.load() || schedulerSynced()) { //Unlock all cores after scheduler completes or system is being shutoff
                     for(int i = 0; i < cores->size(); i++) {
@@ -106,7 +114,7 @@ class SynchronizedClock {
 
         void incrementClock() {
             currentSystemClock.store((currentSystemClock.load() + 1) % LLONG_MAX);
-            // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
         void turnOff() {

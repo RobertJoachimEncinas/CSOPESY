@@ -83,7 +83,7 @@ public:
 
                         if(!processCompleted) {
                             readyQueue->push(currentProcess);
-                        }
+                        } 
 
                         removeFromCore();
                         isPreempted.store(false);

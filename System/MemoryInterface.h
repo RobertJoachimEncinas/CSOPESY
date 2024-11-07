@@ -42,13 +42,18 @@ class MemoryInterface {
         }
 
         MemoryStats computeMemoryStats() {
+            std::unique_lock<std::mutex> lock(mtx);
             std::set<std::string> unique_processes;
             MemoryStats stats = {0, 0, {}};
             ProcessMemory currentProcess = {0, 0, ""};
 
             for(auto& frame: memoryFrames) {
                 if((frame.get())->isInUse) {
-                    if(currentProcess.process_name == "") {
+                    if(currentProcess.process_name != frame.get()->owningProcess) {
+                        if(currentProcess.process_name != "") { 
+                            stats.processMemoryRegions.push_back(currentProcess);
+                        }
+
                         currentProcess.process_name = frame.get()->owningProcess;
                         currentProcess.startAddress = frame.get()->startAddress;
                         currentProcess.endAddress = frame.get()->endAddress;
@@ -63,7 +68,7 @@ class MemoryInterface {
                     if(currentProcess.process_name != "") { 
                         stats.processMemoryRegions.push_back(currentProcess);
                     }
-                    
+
                     //Reset the current process to default as the contiguous block for that process is done
                     currentProcess.process_name = "";
                     currentProcess.startAddress = 0;
@@ -75,6 +80,7 @@ class MemoryInterface {
 
             stats.processes_in_memory = unique_processes.size();
 
+            lock.unlock();
             return stats;
         }
 
@@ -141,10 +147,19 @@ class MemoryInterface {
 
         
         void printMemory() {
+            MemoryStats stats = computeMemoryStats();
+
             std::cout << "Timestamp: (" << getCurrentTimestamp() << ")\n";
-            std::cout << "Number of process in memory: " << "CHANGE ME" << "\n";
-            std::cout << "Total external fragmentation in KB: " << "CHANGE ME" << "\n\n";
-            std::cout << "----end---- = " << "CHANGE ME" << "\n\n";
-            std::cout << "----start---- = " << "CHANGE ME" << "\n\n";
+            std::cout << "Number of process in memory: " << stats.processes_in_memory << "\n";
+            std::cout << "Total external fragmentation in KB: " << stats.totalFragmentation << "\n\n";
+            std::cout << "----end---- = " << endAddress << "\n\n";
+
+            for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
+                std::cout << memoryRegion->endAddress << "\n";
+                std::cout << memoryRegion->process_name << "\n";
+                std::cout << memoryRegion->startAddress << "\n\n";
+            }
+
+            std::cout << "----start---- = " << startAddress << "\n\n";
         }
 };
