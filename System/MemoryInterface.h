@@ -8,6 +8,7 @@
 #include<condition_variable>
 #include<sstream>
 #include "../DataTypes/MemoryChunk.h"
+#include "../DataTypes/Freelist.h"
 
 struct ProcessMemory {
     uint64_t startAddress;
@@ -25,128 +26,138 @@ class MemoryInterface {
     private:
         uint64_t startAddress;
         uint64_t endAddress;
-        uint64_t frameSize;
         uint64_t memorySize;
-        std::vector<std::shared_ptr<MemoryFrame>> memoryFrames;
+        MemoryFrame* memoryStart;
+        FreeList* freeList;
         std::mutex mtx;
         std::condition_variable cv;
         std::string (*getCurrentTimestamp)();
 
-        void createChunks() {
-            uint64_t num_frames = memorySize / frameSize;
-            uint64_t start_addr = 0;
-
-            for(uint64_t i = 0; i < num_frames; i++) {
-                this->memoryFrames.push_back(std::make_shared<MemoryFrame>(frameSize, start_addr));
-                start_addr += frameSize;
-            }
-        }
-
         MemoryStats computeMemoryStats() {
             std::unique_lock<std::mutex> lock(mtx);
-            std::set<std::string> unique_processes;
             MemoryStats stats = {0, 0, {}};
-            ProcessMemory currentProcess = {0, 0, ""};
 
-            for(auto& frame: memoryFrames) {
-                if((frame.get())->isInUse) {
-                    if(currentProcess.process_name != frame.get()->owningProcess) {
-                        if(currentProcess.process_name != "") { 
-                            stats.processMemoryRegions.push_back(currentProcess);
-                        }
-
-                        currentProcess.process_name = frame.get()->owningProcess;
-                        currentProcess.startAddress = frame.get()->startAddress;
-                        currentProcess.endAddress = frame.get()->endAddress;
-                    } else {
-                        currentProcess.endAddress = frame.get()->endAddress; //Update end address only as memoryFrames is in order
-                    }
-
-                    unique_processes.insert(frame.get()->owningProcess); //This wont insert if the process is already in the set
+            MemoryFrame *temp;
+            temp = memoryStart;
+            do {
+                if(temp->isInUse) {
+                    stats.processes_in_memory += 1;
+                    stats.processMemoryRegions.push_back({temp->startAddress, temp->endAddress, temp->owningProcess});
                 } else {
-                    //Frame not in use with a non-default current process signals end of that process' memory region
-                    if(currentProcess.process_name != "") { 
-                        stats.processMemoryRegions.push_back(currentProcess);
-                    }
-
-                    //Reset the current process to default as the contiguous block for that process is done
-                    currentProcess.process_name = "";
-                    currentProcess.startAddress = 0;
-                    currentProcess.endAddress = 0;
-
-                    stats.totalFragmentation += frame.get()->size;
+                    stats.totalFragmentation += temp->size;
                 }
-            }
-
-            if(currentProcess.process_name != "") { 
-                stats.processMemoryRegions.push_back(currentProcess);
-            }
-
-            stats.processes_in_memory = unique_processes.size();
+                temp = temp->next;
+            } while(temp != nullptr);
 
             lock.unlock();
             return stats;
         }
 
     public:
+        ~MemoryInterface() {
+            delete freeList;
+            MemoryFrame *next, *temp;
+            temp = memoryStart;
+            do {
+                next = temp->next;
+                delete temp;
+                temp = next;
+            } while(temp != nullptr);
+        }
+
         MemoryInterface() {}
-        MemoryInterface(uint64_t frameSize, uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
-            this->frameSize = frameSize;
+
+        MemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
             this->memorySize = memorySize;
             this->startAddress = 0;
-            this->endAddress = 0;  
+            this->endAddress = memorySize;
+            this->memoryStart = nullptr;
+            
+            this->freeList = new FirstFitFreeList();
+
             this->getCurrentTimestamp = getCurrentTimestamp;
         }
 
-        void initialize(uint64_t frameSize, uint64_t memorySize) {
-            this->frameSize = frameSize;
-            this->memorySize = memorySize;
-            this->endAddress = memorySize - 1;
-            createChunks(); 
+        void initialize(uint64_t max_mem) {
+            this->memorySize = max_mem;
+            this->memoryStart = new MemoryFrame(memorySize, 0, nullptr, nullptr, "", false);
+            this->freeList->push(memoryStart);
         }
 
-        void free(std::vector<std::shared_ptr<MemoryFrame>> frames) {
+        MemoryFrame* allocate(uint64_t size, std::string owningProcess) {
             std::unique_lock<std::mutex> lock(mtx);
-            for(auto& frame: frames) {
-                frame->isInUse = false;
+            MemoryFrame* allocated = freeList->pop(size);
+
+            if(allocated == nullptr) {
+                return allocated;
             }
-            
-            uint64_t allocatedFramesCount = 0;
-            for (auto& frame: memoryFrames) {
-                if (frame->isInUse) {
-                    allocatedFramesCount++;
-                }
+
+            allocated->owningProcess = owningProcess;
+
+            if(allocated->startAddress == 0) {
+                this->memoryStart = allocated;
             }
+
+            lock.unlock();
+            return allocated;
         }
 
-        std::vector<std::shared_ptr<MemoryFrame>> allocate(uint64_t process_size, std::string owningProcess) {
+        void free(MemoryFrame* chunk) {
             std::unique_lock<std::mutex> lock(mtx);
-            std::vector<std::shared_ptr<MemoryFrame>> allocatedFrames;
-            uint64_t allocatedSize = 0;
-            for(auto& frame: memoryFrames) {
-                if(!frame->isInUse) {
-                    allocatedFrames.push_back(frame);
-                    allocatedSize += frame->size;
-                } else if(allocatedFrames.size() > 0) {
-                    allocatedFrames.clear();
-                    allocatedSize = 0;
+            MemoryFrame* previousChunk = chunk->prev;
+            MemoryFrame* nextChunk = chunk->next;
+
+            chunk->owningProcess = "";
+            chunk->isInUse = false;
+
+            if(previousChunk != nullptr) {
+                if(!previousChunk->isInUse) {
+                    //Remove the previous chunk from the freelist
+                    freeList->remove(previousChunk);
+
+                    //Merge previousChunk into the chunk being freed
+                    chunk->prev = previousChunk->prev;
+                    chunk->size += previousChunk->size;
+                    chunk->startAddress = previousChunk->startAddress;
+
+                    //Set previousChunk's previous to point to the new merged chunk
+                    if(previousChunk->prev != nullptr) {
+                        previousChunk->prev->next = chunk;
+                    }
+
+                    //Reset head of chunk linked list
+                    if(chunk->startAddress == 0) {
+                        this->memoryStart = chunk;
+                    }
+
+                    //Free the memory of the previous chunk
+                    delete previousChunk;
                 }
+            }
 
-                if(allocatedSize >= process_size) {
-                    break;
+            if(nextChunk != nullptr) {
+                if(!nextChunk->isInUse) {
+                    //Remove the next chunk from the freelist
+                    freeList->remove(nextChunk);
+
+                    //Merge nextChunk into the chunk being freed
+                    chunk->next = nextChunk->next;
+                    chunk->size += nextChunk->size;
+                    chunk->endAddress = nextChunk->endAddress;
+
+                    //Set nextChunk's next to point to the new merged chunk
+                    if(nextChunk->next != nullptr) {
+                        nextChunk->next->prev = chunk;
+                    }
+
+                    //Free the memory of the next chunk
+                    delete nextChunk;
                 }
             }
 
-            if(allocatedSize < process_size) {
-                return {};
-            }
-
-            for(auto& frame: allocatedFrames) {
-                frame->isInUse = true;
-                frame->owningProcess = owningProcess;
-            }
-
-            return allocatedFrames;
+            //Add the freed and coalesced chunk into the freelist
+            freeList->push(chunk);
+            lock.unlock();
         }
 
         

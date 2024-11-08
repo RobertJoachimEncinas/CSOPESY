@@ -18,7 +18,7 @@ class Process {
         int id;
         static int last_id;
         long long memoryRequired;
-        std::vector<std::shared_ptr<MemoryFrame>> memoryFrames;
+        MemoryFrame* memoryFrame;
 
         Process() {}
 
@@ -32,7 +32,7 @@ class Process {
             this->core = -1;
             this->logFilePath = "./Logs/" + name + ".txt";
             this->memoryRequired = memoryRequired;
-            this->memoryFrames = {};
+            this->memoryFrame = nullptr;
 
             // FILE* f = fopen(logFilePath.c_str(), "w");
 

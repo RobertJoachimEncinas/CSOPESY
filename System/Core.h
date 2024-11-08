@@ -82,7 +82,8 @@ public:
                         if(!processCompleted) {
                             readyQueue->push(currentProcess);
                         } else {
-                            memory->free(currentProcess->memoryFrames);
+                            memory->free(currentProcess->memoryFrame);
+                            currentProcess->memoryFrame = nullptr;  
                         }
 
                         removeFromCore();

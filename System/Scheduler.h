@@ -49,11 +49,11 @@ class Scheduler {
                     if(!((*cores->at(i)).isActive())) { //Check if the core is free
                         process = readyQueue.pop();
 
-                        if(process->memoryFrames.size() == 0) {
-                            process->memoryFrames = memory->allocate(process->memoryRequired, process->name);
+                        if(process->memoryFrame == nullptr) {
+                            process->memoryFrame = memory->allocate(process->memoryRequired, process->name);
                         }
 
-                        if(process->memoryFrames.size() == 0) {
+                        if(process->memoryFrame == nullptr) {
                             readyQueue.push(process);
                         } else {
                             (*cores->at(i)).assignProcess(process);
