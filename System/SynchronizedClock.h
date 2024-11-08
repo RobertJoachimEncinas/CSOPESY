@@ -114,7 +114,6 @@ class SynchronizedClock {
 
         void incrementClock() {
             currentSystemClock.store((currentSystemClock.load() + 1) % LLONG_MAX);
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
 
         void turnOff() {
