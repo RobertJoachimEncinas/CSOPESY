@@ -82,6 +82,7 @@ class MemoryInterface {
             this->memorySize = max_mem;
             this->memoryStart = new MemoryFrame(memorySize, 0, nullptr, nullptr, "", false);
             this->freeList->push(memoryStart);
+            this->endAddress = memorySize - 1;
         }
 
         MemoryFrame* allocate(uint64_t size, std::string owningProcess) {
