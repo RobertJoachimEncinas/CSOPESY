@@ -19,7 +19,7 @@ class SynchronizedClock {
         std::vector<Core*>* cores;
         Tester* tester;
         Scheduler* scheduler;
-        MemoryInterface* memory;
+        AbstractMemoryInterface* memory;
         std::mutex mtx;
         std::condition_variable cv;
 
@@ -50,7 +50,7 @@ class SynchronizedClock {
         }
 
     public:
-        SynchronizedClock(std::vector<Core*>* cores, Tester* tester, Scheduler* scheduler, MemoryInterface* memory) {
+        SynchronizedClock(std::vector<Core*>* cores, Tester* tester, Scheduler* scheduler, AbstractMemoryInterface* memory) {
             active.store(false);
             testerShouldStart.store(false);
             currentSystemClock.store(0);

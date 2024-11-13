@@ -33,16 +33,26 @@ class System
         Scheduler scheduler;
         Tester tester;
         SynchronizedClock synchronizer;
-        MemoryInterface memory;
+        AbstractMemoryInterface* memory;
     public:    
         //Constructor
-        System(): memory(0, getCurrentTimestamp), synchronizer(std::addressof(cores), std::addressof(tester), std::addressof(scheduler), std::addressof(memory)),
-        scheduler(std::addressof(cores), synchronizer.getSyncClock(), std::addressof(memory)), 
+        ~System() {
+            for(const auto& core: cores) {
+                delete core;
+            }
+
+            delete memory;
+        }
+
+        System(): synchronizer(std::addressof(cores), std::addressof(tester), std::addressof(scheduler), memory),
+        scheduler(std::addressof(cores), synchronizer.getSyncClock(), memory), 
         tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler), &memoryPerProcess)
         {}
 
         //Methods
         void boot() {
+            
+            
             synchronizer.start();
             scheduler.start();
             for(int i = 0; i < cores.size(); i++) {
@@ -226,10 +236,10 @@ class System
                         break;
                 }
             }
-            memory.initialize(maxMem);
+            memory->initialize(maxMem);
             totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
-                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec, std::addressof(memory)));
+                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec, memory));
             }
             scheduler.assignReadyQueueToCores();
             processMaxIns = max_ins;

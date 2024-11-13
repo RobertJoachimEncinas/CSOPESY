@@ -22,8 +22,8 @@ struct MemoryStats {
     std::vector<ProcessMemory> processMemoryRegions;
 };
 
-class MemoryInterface {
-    private:
+class AbstractMemoryInterface {
+    protected:
         uint64_t startAddress;
         uint64_t endAddress;
         uint64_t memorySize;
@@ -33,7 +33,20 @@ class MemoryInterface {
         std::condition_variable cv;
         std::string (*getCurrentTimestamp)();
 
-        MemoryStats computeMemoryStats() {
+        virtual MemoryStats computeMemoryStats() { return {0, 0, {}}; };
+    public:
+        AbstractMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {}
+
+        virtual ~AbstractMemoryInterface() {};
+        virtual void initialize(uint64_t max_mem) {};
+        virtual MemoryFrame* allocate(uint64_t size, std::string owningProcess) { return nullptr; };
+        virtual void free(MemoryFrame* chunk) {};
+        virtual void printMemory(long long quantum_cycle) {};
+};
+
+class FlatMemoryInterface: AbstractMemoryInterface {
+    private:
+        MemoryStats computeMemoryStats() override {
             std::unique_lock<std::mutex> lock(mtx);
             MemoryStats stats = {0, 0, {}};
 
@@ -54,7 +67,7 @@ class MemoryInterface {
         }
 
     public:
-        ~MemoryInterface() {
+        ~FlatMemoryInterface() {
             delete freeList;
             MemoryFrame *next, *temp;
             temp = memoryStart;
@@ -65,9 +78,9 @@ class MemoryInterface {
             } while(temp != nullptr);
         }
 
-        MemoryInterface() {}
+        FlatMemoryInterface() {}
 
-        MemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
+        FlatMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
             this->memorySize = memorySize;
             this->startAddress = 0;
             this->endAddress = memorySize;
@@ -78,14 +91,13 @@ class MemoryInterface {
             this->getCurrentTimestamp = getCurrentTimestamp;
         }
 
-        void initialize(uint64_t max_mem) {
+        void initialize(uint64_t max_mem) override {
             this->memorySize = max_mem;
             this->memoryStart = new MemoryFrame(memorySize, 0, nullptr, nullptr, "", false);
             this->freeList->push(memoryStart);
-            this->endAddress = memorySize - 1;
         }
 
-        MemoryFrame* allocate(uint64_t size, std::string owningProcess) {
+        MemoryFrame* allocate(uint64_t size, std::string owningProcess) override {
             std::unique_lock<std::mutex> lock(mtx);
             MemoryFrame* allocated = freeList->pop(size);
 
@@ -103,7 +115,7 @@ class MemoryInterface {
             return allocated;
         }
 
-        void free(MemoryFrame* chunk) {
+        void free(MemoryFrame* chunk) override {
             std::unique_lock<std::mutex> lock(mtx);
             MemoryFrame* previousChunk = chunk->prev;
             MemoryFrame* nextChunk = chunk->next;
@@ -160,9 +172,8 @@ class MemoryInterface {
             freeList->push(chunk);
             lock.unlock();
         }
-
         
-        void printMemory(long long quantum_cycle) {
+        void printMemory(long long quantum_cycle) override {
             MemoryStats stats = computeMemoryStats();
             std::ostringstream oss;
 

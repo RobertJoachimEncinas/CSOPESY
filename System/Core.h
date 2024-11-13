@@ -25,7 +25,7 @@ private:
     std::atomic<bool> canProceed;
     std::string (*getCurrentTimestamp)();
     SchedAlgo algorithm;
-    MemoryInterface* memory;
+    AbstractMemoryInterface* memory;
 
     void removeFromCore() {
         currentProcess->setCore(-1);
@@ -35,7 +35,7 @@ private:
     }
 
 public:
-    Core(int coreId, long long quantumCycles, std::atomic<long long>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm, long long delayPerExec, MemoryInterface* memory) {
+    Core(int coreId, long long quantumCycles, std::atomic<long long>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm, long long delayPerExec, AbstractMemoryInterface* memory) {
         this->coreId = coreId;
         this->coreClock = 0;
         this->quantumCycles = quantumCycles;

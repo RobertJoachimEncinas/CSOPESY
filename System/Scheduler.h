@@ -13,10 +13,10 @@ class Scheduler {
         std::thread t;
         std::atomic<bool> active;
         std::atomic<long long>* currentSystemClock;
-        MemoryInterface* memory;
+        AbstractMemoryInterface* memory;
 
     public:
-        Scheduler(std::vector<Core*>* cores, std::atomic<long long>* currentSystemClock, MemoryInterface* memory) {
+        Scheduler(std::vector<Core*>* cores, std::atomic<long long>* currentSystemClock, AbstractMemoryInterface* memory) {
             this->schedulerClock = 0;
             this->currentSystemClock = currentSystemClock;
             this->cores = cores;
