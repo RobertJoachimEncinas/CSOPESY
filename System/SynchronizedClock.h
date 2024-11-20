@@ -50,13 +50,16 @@ class SynchronizedClock {
         }
 
     public:
-        SynchronizedClock(std::vector<Core*>* cores, Tester* tester, Scheduler* scheduler, AbstractMemoryInterface* memory) {
+        SynchronizedClock(std::vector<Core*>* cores, Tester* tester, Scheduler* scheduler) {
             active.store(false);
             testerShouldStart.store(false);
             currentSystemClock.store(0);
             this->cores = cores;
             this->tester = tester;
             this->scheduler = scheduler;
+        }
+
+        void setMemoryInterface(AbstractMemoryInterface* memory) {
             this->memory = memory;
         }
 

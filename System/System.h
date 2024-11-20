@@ -34,6 +34,7 @@ class System
         Tester tester;
         SynchronizedClock synchronizer;
         AbstractMemoryInterface* memory;
+
     public:    
         //Constructor
         ~System() {
@@ -44,15 +45,13 @@ class System
             delete memory;
         }
 
-        System(): synchronizer(std::addressof(cores), std::addressof(tester), std::addressof(scheduler), memory),
-        scheduler(std::addressof(cores), synchronizer.getSyncClock(), memory), 
+        System(): synchronizer(std::addressof(cores), std::addressof(tester), std::addressof(scheduler)),
+        scheduler(std::addressof(cores), synchronizer.getSyncClock()), 
         tester(synchronizer.getSyncClock(), &processFreq, &processes, &processMinIns, &processMaxIns, getCurrentTimestamp, std::addressof(scheduler), &memoryPerProcess)
         {}
 
         //Methods
         void boot() {
-            
-            
             synchronizer.start();
             scheduler.start();
             for(int i = 0; i < cores.size(); i++) {
@@ -88,6 +87,7 @@ class System
             long long memPerFrame;
             long long memPerProc;
             long long limit = (long long)1 << 32;
+            bool isFlatAllocator = true;
 
             for (int i = 1; i <= 10; i++) {
                 char buffer[256];
@@ -236,7 +236,16 @@ class System
                         break;
                 }
             }
-            memory->initialize(maxMem);
+
+            if(isFlatAllocator) {
+                memory = new FlatMemoryInterface(maxMem, getCurrentTimestamp);
+            } else {
+                //SET FOR PAGING MEMORY INTERFACE
+            }
+
+            scheduler.setMemoryInterface(memory);
+            synchronizer.setMemoryInterface(memory);
+
             totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
                 cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec, memory));
@@ -246,8 +255,10 @@ class System
             processMinIns = min_ins;
             processFreq = process_freq;
             memoryPerProcess = memPerProc;
+            
             boot();
             isInitialized = true;
+
             processHistory["Main"].emplace_back("System booted successfully.\n", "RESET");
         }
         

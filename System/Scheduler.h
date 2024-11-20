@@ -16,11 +16,14 @@ class Scheduler {
         AbstractMemoryInterface* memory;
 
     public:
-        Scheduler(std::vector<Core*>* cores, std::atomic<long long>* currentSystemClock, AbstractMemoryInterface* memory) {
+        Scheduler(std::vector<Core*>* cores, std::atomic<long long>* currentSystemClock) {
             this->schedulerClock = 0;
             this->currentSystemClock = currentSystemClock;
             this->cores = cores;
             this->active.store(false);
+        }
+
+        void setMemoryInterface(AbstractMemoryInterface* memory) {
             this->memory = memory;
         }
         
