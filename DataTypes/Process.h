@@ -4,7 +4,7 @@
 #pragma once
 #include <string>
 #include <chrono>
-#include "MemoryChunk.h"
+#include "Memory.h"
 
 class Process {
     public:
@@ -18,7 +18,7 @@ class Process {
         int id;
         static int last_id;
         long long memoryRequired;
-        MemoryFrame* memoryFrame;
+        AllocatedMemory* memoryFrame;
 
         Process() {}
 

@@ -7,7 +7,7 @@
 #include<vector>
 #include<condition_variable>
 #include<sstream>
-#include "../DataTypes/MemoryChunk.h"
+#include "../DataTypes/Memory.h"
 #include "../DataTypes/Freelist.h"
 
 struct ProcessMemory {
@@ -27,7 +27,6 @@ class AbstractMemoryInterface {
         uint64_t startAddress;
         uint64_t endAddress;
         uint64_t memorySize;
-        MemoryFrame* memoryStart;
         FreeList* freeList;
         std::mutex mtx;
         std::condition_variable cv;
@@ -41,24 +40,25 @@ class AbstractMemoryInterface {
             this->memorySize = memorySize;
             this->startAddress = 0;
             this->endAddress = memorySize;
-            this->memoryStart = nullptr;
             this->freeList = nullptr;
             this->getCurrentTimestamp = getCurrentTimestamp;
         }
 
         virtual ~AbstractMemoryInterface() {};
-        virtual MemoryFrame* allocate(uint64_t size, std::string owningProcess) { return nullptr; };
-        virtual void free(MemoryFrame* chunk) {};
+        virtual AllocatedMemory* allocate(uint64_t size, std::string owningProcess) { return nullptr; };
+        virtual void free(AllocatedMemory* allocated) {};
         virtual void printMemory(long long quantum_cycle) {};
 };
 
 class FlatMemoryInterface: public AbstractMemoryInterface {
     private:
+        MemoryChunk* memoryStart;
+
         MemoryStats computeMemoryStats() override {
             std::unique_lock<std::mutex> lock(mtx);
             MemoryStats stats = {0, 0, {}};
 
-            MemoryFrame *temp;
+            MemoryChunk *temp;
             temp = memoryStart;
             do {
                 if(temp->isInUse) {
@@ -77,7 +77,7 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
     public:
         ~FlatMemoryInterface() {
             delete freeList;
-            MemoryFrame *next, *temp;
+            MemoryChunk *next, *temp;
             temp = memoryStart;
             do {
                 next = temp->next;
@@ -92,15 +92,15 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
             this->memorySize = memorySize;
             this->startAddress = 0;
             this->endAddress = memorySize;
-            this->memoryStart = new MemoryFrame(memorySize, 0, nullptr, nullptr, "", false);
+            this->memoryStart = new MemoryChunk(memorySize, 0, nullptr, nullptr, "", false);
             this->freeList = new FirstFitFreeList();
             this->freeList->push(memoryStart);
             this->getCurrentTimestamp = getCurrentTimestamp;
         }
 
-        MemoryFrame* allocate(uint64_t size, std::string owningProcess) override {
+        MemoryChunk* allocate(uint64_t size, std::string owningProcess) override {
             std::unique_lock<std::mutex> lock(mtx);
-            MemoryFrame* allocated = freeList->pop(size);
+            MemoryChunk* allocated = (MemoryChunk*) freeList->pop(size);
 
             if(allocated == nullptr) {
                 return allocated;
@@ -116,10 +116,11 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
             return allocated;
         }
 
-        void free(MemoryFrame* chunk) override {
+        void free(AllocatedMemory* allocated) override {
             std::unique_lock<std::mutex> lock(mtx);
-            MemoryFrame* previousChunk = chunk->prev;
-            MemoryFrame* nextChunk = chunk->next;
+            MemoryChunk* chunk = (MemoryChunk*) allocated;
+            MemoryChunk* previousChunk = (chunk)->prev;
+            MemoryChunk* nextChunk = chunk->next;
 
             chunk->owningProcess = "";
             chunk->isInUse = false;
@@ -171,6 +172,62 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
 
             //Add the freed and coalesced chunk into the freelist
             freeList->push(chunk);
+            lock.unlock();
+        }
+        
+        void printMemory(long long quantum_cycle) override {
+            MemoryStats stats = computeMemoryStats();
+            std::ostringstream oss;
+
+            std::string fileMemoryPath = "./Logs/memory_stamp_" + std::to_string(quantum_cycle) + ".txt";
+            FILE* f = fopen(fileMemoryPath.c_str(), "a");
+            fprintf(f, "Timestamp: (%s)\n", getCurrentTimestamp().c_str());
+            fprintf(f, "Number of process in memory: %llu\n", stats.processes_in_memory);
+            fprintf(f, "Total external fragmentation in KB: %llu\n", stats.totalFragmentation);
+            fprintf(f, "----end---- = %llu\n\n", endAddress);
+            for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
+                oss << memoryRegion->endAddress << "\n" << memoryRegion->process_name << "\n" << memoryRegion->startAddress << "\n\n";                
+            }
+            fprintf(f, "%s", oss.str().c_str());
+            fprintf(f, "----start---- = %llu\n\n", startAddress);
+            fclose(f);
+        }
+};  
+
+class PagingMemoryInterface: public AbstractMemoryInterface {
+    private:
+        MemoryStats computeMemoryStats() override {
+            std::unique_lock<std::mutex> lock(mtx);
+            MemoryStats stats = {0, 0, {}};
+
+            
+
+            lock.unlock();
+            return stats;
+        }
+
+    public:
+        ~PagingMemoryInterface() {
+            
+        }
+
+        PagingMemoryInterface() {}
+
+        PagingMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
+            this->memorySize = memorySize;
+            this->startAddress = 0;
+            this->endAddress = memorySize;
+            this->freeList = new FirstFitFreeList();
+            this->getCurrentTimestamp = getCurrentTimestamp;
+        }
+
+        MemoryFrame* allocate(uint64_t size, std::string owningProcess) override {
+            return nullptr;
+        }
+
+        void free(AllocatedMemory* allocated) override {
+            std::unique_lock<std::mutex> lock(mtx);
+            
             lock.unlock();
         }
         
