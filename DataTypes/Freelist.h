@@ -5,9 +5,17 @@
 
 struct FirstFitComparator
 {
-    bool operator()(const AllocatedMemory* x, const AllocatedMemory* y) const
+    bool operator()(const MemoryChunk* x, const MemoryChunk* y) const
     {
         return x->startAddress < y->startAddress;
+    }
+};
+
+struct PagingFirstFitComparator
+{
+    bool operator()(const MemoryFrame* x, const MemoryFrame* y) const
+    {
+        return x->frameNumber < y->frameNumber;
     }
 };
 
@@ -48,5 +56,42 @@ public:
 
     void push(AllocatedMemory* chunk) override {
         chunks.insert((MemoryChunk*) chunk);
+    }
+};
+
+class FirstFitPagingFreeList: public FreeList {
+private:
+    std::set<MemoryFrame*, PagingFirstFitComparator> frames;
+    uint64_t frameSize;
+
+public:
+    ~FirstFitPagingFreeList() {}
+
+    FirstFitPagingFreeList(uint64_t frameSize) {
+        this->frameSize = frameSize;
+    }
+
+    MemoryFrame* pop(uint64_t size) override {
+        MemoryFrame* allocated = nullptr;
+
+        for(const auto& frame: frames) {
+            allocated = frame;
+            frames.erase(frame);
+            break;
+        }
+
+        return allocated;
+    }
+
+    void remove(AllocatedMemory* chunk) override {
+        frames.erase((MemoryFrame*) chunk);
+    }
+
+    void push(AllocatedMemory* chunk) override {
+        frames.insert((MemoryFrame*) chunk);
+    }
+
+    uint64_t getAvailableMemory() {
+        return frames.size() * frameSize;
     }
 };

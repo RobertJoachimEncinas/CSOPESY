@@ -87,7 +87,7 @@ class System
             long long memPerFrame;
             long long memPerProc;
             long long limit = (long long)1 << 32;
-            bool isFlatAllocator = true;
+            bool isFlatAllocator = false; //CHANGE BASED ON CONFIG
 
             for (int i = 1; i <= 10; i++) {
                 char buffer[256];
@@ -240,7 +240,7 @@ class System
             if(isFlatAllocator) {
                 memory = new FlatMemoryInterface(maxMem, getCurrentTimestamp);
             } else {
-                //SET FOR PAGING MEMORY INTERFACE
+                memory = new PagingMemoryInterface(maxMem, memPerFrame, getCurrentTimestamp);
             }
 
             scheduler.setMemoryInterface(memory);

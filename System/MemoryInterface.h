@@ -45,7 +45,7 @@ class AbstractMemoryInterface {
         }
 
         virtual ~AbstractMemoryInterface() {};
-        virtual AllocatedMemory* allocate(uint64_t size, std::string owningProcess) { return nullptr; };
+        virtual std::vector<AllocatedMemory*> allocate(uint64_t size, std::string owningProcess) { return {}; };
         virtual void free(AllocatedMemory* allocated) {};
         virtual void printMemory(long long quantum_cycle) {};
 };
@@ -91,19 +91,19 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
         FlatMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
             this->memorySize = memorySize;
             this->startAddress = 0;
-            this->endAddress = memorySize;
+            this->endAddress = memorySize - 1;
             this->memoryStart = new MemoryChunk(memorySize, 0, nullptr, nullptr, "", false);
             this->freeList = new FirstFitFreeList();
             this->freeList->push(memoryStart);
             this->getCurrentTimestamp = getCurrentTimestamp;
         }
 
-        MemoryChunk* allocate(uint64_t size, std::string owningProcess) override {
+        std::vector<AllocatedMemory *> allocate(uint64_t size, std::string owningProcess) override {
             std::unique_lock<std::mutex> lock(mtx);
             MemoryChunk* allocated = (MemoryChunk*) freeList->pop(size);
 
             if(allocated == nullptr) {
-                return allocated;
+                return {};
             }
 
             allocated->owningProcess = owningProcess;
@@ -113,7 +113,7 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
             }
 
             lock.unlock();
-            return allocated;
+            return { allocated };
         }
 
         void free(AllocatedMemory* allocated) override {
@@ -178,56 +178,124 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
         void printMemory(long long quantum_cycle) override {
             MemoryStats stats = computeMemoryStats();
             std::ostringstream oss;
-
-            std::string fileMemoryPath = "./Logs/memory_stamp_" + std::to_string(quantum_cycle) + ".txt";
-            FILE* f = fopen(fileMemoryPath.c_str(), "a");
-            fprintf(f, "Timestamp: (%s)\n", getCurrentTimestamp().c_str());
-            fprintf(f, "Number of process in memory: %llu\n", stats.processes_in_memory);
-            fprintf(f, "Total external fragmentation in KB: %llu\n", stats.totalFragmentation);
-            fprintf(f, "----end---- = %llu\n\n", endAddress);
-            for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
-                oss << memoryRegion->endAddress << "\n" << memoryRegion->process_name << "\n" << memoryRegion->startAddress << "\n\n";                
-            }
-            fprintf(f, "%s", oss.str().c_str());
-            fprintf(f, "----start---- = %llu\n\n", startAddress);
-            fclose(f);
         }
 };  
 
 class PagingMemoryInterface: public AbstractMemoryInterface {
     private:
+        uint64_t frameSize;
+        std::vector<MemoryFrame*> memoryMap;
+
         MemoryStats computeMemoryStats() override {
             std::unique_lock<std::mutex> lock(mtx);
+            std::set<std::string> unique_processes;
             MemoryStats stats = {0, 0, {}};
+            ProcessMemory currentProcess = {0, 0, ""};
 
-            
+            for(const auto& frame: memoryMap) {
+                if(frame->isInUse) {
+                    if(currentProcess.process_name != frame->owningProcess) {
+                        if(currentProcess.process_name != "") { 
+                            stats.processMemoryRegions.push_back(currentProcess);
+                        }
+
+                        currentProcess.process_name = frame->owningProcess;
+                        currentProcess.startAddress = frame->startAddress;
+                        currentProcess.endAddress = frame->endAddress;
+                    } else {
+                        currentProcess.endAddress = frame->endAddress; //Update end address only as memoryFrames is in order
+                    }
+
+                    unique_processes.insert(frame->owningProcess); //This wont insert if the process is already in the set
+
+                } else {
+                    //Frame not in use with a non-default current process signals end of that process' memory region
+                    if(currentProcess.process_name != "") { 
+                        stats.processMemoryRegions.push_back(currentProcess);
+                    }
+
+                    //Reset the current process to default as the contiguous block for that process is done
+                    currentProcess.process_name = "";
+                    currentProcess.startAddress = 0;
+                    currentProcess.endAddress = 0;
+
+                    stats.totalFragmentation += frame->size;
+                }
+            }
+
+            if(currentProcess.process_name != "") { 
+                stats.processMemoryRegions.push_back(currentProcess);
+            }
+
+            stats.processes_in_memory = unique_processes.size();
 
             lock.unlock();
             return stats;
         }
 
+        void createChunks() {
+            uint64_t num_frames = memorySize / frameSize;
+            uint64_t start_addr = 0;
+            MemoryFrame* addr;
+
+            for(uint64_t frameNum = 0; frameNum < num_frames; frameNum++) {
+                addr = new MemoryFrame(frameSize, start_addr, frameNum, "");
+                this->memoryMap.push_back(addr);
+                this->freeList->push(addr);
+                start_addr += frameSize;
+            }
+        }
+
     public:
         ~PagingMemoryInterface() {
-            
+            delete freeList;
+
+            for(const auto& frame: memoryMap) {
+                delete frame;
+            }
         }
 
         PagingMemoryInterface() {}
 
-        PagingMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
+        PagingMemoryInterface(uint64_t memorySize, uint64_t frameSize, std::string (*getCurrentTimestamp)()) {
             this->memorySize = memorySize;
             this->startAddress = 0;
-            this->endAddress = memorySize;
-            this->freeList = new FirstFitFreeList();
+            this->endAddress = memorySize - 1;
+            this->frameSize = frameSize;
+            this->freeList = new FirstFitPagingFreeList(frameSize);
             this->getCurrentTimestamp = getCurrentTimestamp;
+            
+            createChunks();
         }
 
-        MemoryFrame* allocate(uint64_t size, std::string owningProcess) override {
-            return nullptr;
+        std::vector<AllocatedMemory*> allocate(uint64_t size, std::string owningProcess) override {
+            std::unique_lock<std::mutex> lock(mtx);
+            if(size > ((FirstFitPagingFreeList*) freeList)->getAvailableMemory()) {
+                lock.unlock();
+                return {};
+            }
+            
+            std::vector<AllocatedMemory*> allocatedMem;
+            uint64_t allocatedSize = 0;
+            MemoryFrame* temp;
+
+            while(allocatedSize < size) {
+                temp = (MemoryFrame*) freeList->pop(frameSize);
+                temp->owningProcess = owningProcess;
+                temp->isInUse = true;
+                allocatedMem.push_back(temp);
+                allocatedSize += frameSize;
+            }
+            
+            lock.unlock();
+            return allocatedMem;
         }
 
         void free(AllocatedMemory* allocated) override {
             std::unique_lock<std::mutex> lock(mtx);
-            
+            allocated->owningProcess = "";
+            allocated->isInUse = false;
+            freeList->push(allocated);
             lock.unlock();
         }
         

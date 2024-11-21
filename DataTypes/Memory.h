@@ -8,15 +8,13 @@
 
 class AllocatedMemory {
     public:
-        uint64_t size;
         uint64_t startAddress;
         uint64_t endAddress;
+        uint64_t size;
         bool isInUse;
         std::string owningProcess;
 
         virtual ~AllocatedMemory() {}
-
-        virtual AllocatedMemory* getPartition(uint64_t partitionSize) { return nullptr; }
 };
 
 class MemoryChunk: public AllocatedMemory {
@@ -38,7 +36,7 @@ class MemoryChunk: public AllocatedMemory {
             this->owningProcess = owningProcess;
         }
 
-        MemoryChunk* getPartition(uint64_t partitionSize) override {
+        MemoryChunk* getPartition(uint64_t partitionSize) {
             if(partitionSize > this->size) {
                 return nullptr;
             }
@@ -61,7 +59,20 @@ class MemoryChunk: public AllocatedMemory {
 };
 
 class MemoryFrame: public AllocatedMemory {
+    public:
+        uint64_t frameNumber;
 
+        ~MemoryFrame() {}
+
+        MemoryFrame() {}
+
+        MemoryFrame(uint64_t size, uint64_t startAddress, uint64_t frameNumber, std::string owningProcess, bool isInUse = false) {
+            this->size = size;
+            this->frameNumber = frameNumber;
+            this->startAddress = startAddress;
+            this->endAddress = startAddress + size - 1;
+            this->owningProcess = owningProcess;
+        }
 };
 
 #endif
