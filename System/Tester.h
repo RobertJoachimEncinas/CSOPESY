@@ -17,7 +17,7 @@ class Tester
         std::atomic<long long>* currentSystemClock;
         long long* processFreq;
         long long processFreqCounter;
-        std::vector<std::shared_ptr<Process>>* processes;
+        std::map<std::string, std::shared_ptr<Process>>* processes;
         long long processIdCounter;
         long long* processMinIns;
         long long* processMaxIns;
@@ -26,7 +26,7 @@ class Tester
         Scheduler* scheduler;
 
     public:    
-        Tester(std::atomic<long long>* currentSystemClock, long long* processFreq, std::vector<std::shared_ptr<Process>>* processes, long long *processMinIns, long long *processMaxIns, std::string (*getCurrentTimestamp)(), Scheduler* scheduler, long long* memoryPerProcess) {
+        Tester(std::atomic<long long>* currentSystemClock, long long* processFreq, std::map<std::string, std::shared_ptr<Process>>* processes, long long *processMinIns, long long *processMaxIns, std::string (*getCurrentTimestamp)(), Scheduler* scheduler, long long* memoryPerProcess) {
             this->currentSystemClock = currentSystemClock;
             this->testerClock = 0;
             this->active.store(false);
@@ -63,7 +63,7 @@ class Tester
                     // Check if the process already exists
                     std::string process_name = "Process" + std::to_string(processIdCounter);
                     for (const auto& process : *processes) {
-                        if (process->name == process_name) {
+                        if (process.first == process_name) {
                             processIdCounter++;
                             process_name = "Process" + std::to_string(processIdCounter);
                         }
@@ -72,7 +72,7 @@ class Tester
                     long long instructions = *processMinIns + (rand() % (*processMaxIns - *processMinIns + 1));
                     // If no duplicates, create and add the new process
                     std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), *memoryPerProcess);
-                    processes->push_back(newProcess);
+                    processes->insert(std::make_pair(process_name, newProcess));
 
                     //Add to scheduler
                     scheduler->enqueue(newProcess.get());

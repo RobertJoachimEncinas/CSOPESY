@@ -17,7 +17,7 @@
 class System
 {
     private:
-        std::vector<std::shared_ptr<Process>> processes;
+        std::map<std::string, std::shared_ptr<Process>> processes;
         bool isInMainConsole = true; // Flag to track if commands are valid
         bool isInitialized = false;
         std::vector<Core*> cores;
@@ -291,10 +291,10 @@ class System
             std::vector<Process> finishedProcesses;
 
             for(const auto& process: processes) {
-                if(process->completed) {
-                    finishedProcesses.push_back(*process);
+                if(process.second->completed) {
+                    finishedProcesses.push_back(*process.second);
                 } else {
-                    runningProcesses.push_back(*process);
+                    runningProcesses.push_back(*process.second);
                 }
             }
 
@@ -349,12 +349,12 @@ class System
 
         void cmd_screen_r(const std::string& process_name) {
             for (const auto& process : processes) {
-                if (process->name == process_name) {
-                    if(process->completed) {
+                if (process.second->name == process_name) {
+                    if(process.second->completed) {
                         break;
                     }
 
-                    cmd_screen(*process);
+                    cmd_screen(*process.second);
                     return;
                 }
             }
@@ -367,7 +367,7 @@ class System
             tester.lock();
 
             for (const auto& process : processes) {
-                if (process->name == process_name) {
+                if (process.second->name == process_name) {
                     std::cout << "Error! Process " << process_name << " already exists.\n";
                     processHistory["Main"].emplace_back("Error! Process " + process_name + " already exists.\n", "RESET");
                     tester.unlock();
@@ -378,7 +378,7 @@ class System
             long long instructions = processMinIns + (rand() % (processMaxIns - processMinIns + 1));
             // If no duplicates, create and add the new process
             std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), memoryPerProcess);
-            processes.push_back(newProcess);
+            processes.insert(std::make_pair(process_name, newProcess));
 
             //Add to scheduler
             scheduler.enqueue(newProcess.get());
@@ -429,21 +429,21 @@ class System
                 }
                 else if (command == "process-smi"){
                     for(const auto& process: processes) {
-                        if (process->name == current_process) {
+                        if (process.second->name == current_process) {
                             std::ostringstream output; 
-                            output << "\nProcess: " << process->name << "\n";
-                            output << "ID: " << process->id << "\n\n";
+                            output << "\nProcess: " << process.second->name << "\n";
+                            output << "ID: " << process.second->id << "\n\n";
                             
-                            if (process->completed) {
+                            if (process.second->completed) {
                                 output << "Finished!\n\n";
                             } else {
-                                output << "Current instruction line: " << process->current_instruction << "\n";
-                                output << "Lines of code: " << process->total_instructions << "\n\n";
+                                output << "Current instruction line: " << process.second->current_instruction << "\n";
+                                output << "Lines of code: " << process.second->total_instructions << "\n\n";
                             }
 
                             std::cout << output.str();
-                            processHistory[process->name].emplace_back("Enter a command: process-smi\n", "RESET");
-                            processHistory[process->name].emplace_back(output.str(), "RESET");
+                            processHistory[process.second->name].emplace_back("Enter a command: process-smi\n", "RESET");
+                            processHistory[process.second->name].emplace_back(output.str(), "RESET");
 
                             return;
                         }
@@ -500,10 +500,10 @@ class System
                     std::vector<Process> finishedProcesses;
 
                     for(const auto& process: processes) {
-                        if(process->completed) {
-                            finishedProcesses.push_back(*process);
+                        if(process.second->completed) {
+                            finishedProcesses.push_back(*process.second);
                         } else {
-                            runningProcesses.push_back(*process);
+                            runningProcesses.push_back(*process.second);
                         }
                     }
 
