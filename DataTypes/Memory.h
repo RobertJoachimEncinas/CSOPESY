@@ -72,6 +72,7 @@ class MemoryFrame: public AllocatedMemory {
             this->startAddress = startAddress;
             this->endAddress = startAddress + size - 1;
             this->owningProcess = owningProcess;
+            this->isInUse = isInUse;
         }
 };
 
