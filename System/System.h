@@ -245,6 +245,7 @@ class System
 
             scheduler.setMemoryInterface(memory);
             synchronizer.setMemoryInterface(memory);
+            tester.setMemoryInterface(memory);
 
             totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
@@ -378,6 +379,7 @@ class System
             long long instructions = processMinIns + (rand() % (processMaxIns - processMinIns + 1));
             // If no duplicates, create and add the new process
             std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), memoryPerProcess);
+            memory->addToProcessList(newProcess.get());
             processes.insert(std::make_pair(process_name, newProcess));
 
             //Add to scheduler

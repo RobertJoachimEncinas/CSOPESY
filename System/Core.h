@@ -82,6 +82,7 @@ public:
                         if(!processCompleted) {
                             readyQueue->push(currentProcess);
                         } else {
+                            memory->removeFromProcessList(currentProcess);
                             for(const auto& allocatedRegion: currentProcess->allocatedMemory) {
                                 memory->free(allocatedRegion);
                             }

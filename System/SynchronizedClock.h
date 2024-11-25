@@ -76,6 +76,11 @@ class SynchronizedClock {
 
                 if(countdown == 0) {
                     memory->printMemory(this->currentSystemClock.load());
+                    Process* p = memory->getTop();
+
+                    if(p != nullptr)
+                        std::cout << p->name << "\n";
+                    
                     countdown = 5;
                 }
                 countdown--;

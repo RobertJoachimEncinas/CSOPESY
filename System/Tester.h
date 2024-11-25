@@ -24,6 +24,7 @@ class Tester
         long long* memoryPerProcess;
         std::string (*getCurrentTimestamp)();
         Scheduler* scheduler;
+        AbstractMemoryInterface* memory;
 
     public:    
         Tester(std::atomic<long long>* currentSystemClock, long long* processFreq, std::map<std::string, std::shared_ptr<Process>>* processes, long long *processMinIns, long long *processMaxIns, std::string (*getCurrentTimestamp)(), Scheduler* scheduler, long long* memoryPerProcess) {
@@ -72,8 +73,9 @@ class Tester
                     long long instructions = *processMinIns + (rand() % (*processMaxIns - *processMinIns + 1));
                     // If no duplicates, create and add the new process
                     std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), *memoryPerProcess);
+                    memory->addToProcessList(newProcess.get());
                     processes->insert(std::make_pair(process_name, newProcess));
-
+                
                     //Add to scheduler
                     scheduler->enqueue(newProcess.get());
 
@@ -84,6 +86,10 @@ class Tester
                 processFreqCounter++;      
                 clearCanProceed(); //Reset can proceed for next cycle
             }
+        }
+
+        void setMemoryInterface(AbstractMemoryInterface* memory) {
+            this->memory = memory;
         }
 
         long long getTime() {

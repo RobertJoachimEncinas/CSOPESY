@@ -7,6 +7,17 @@
 #include "Memory.h"
 
 class Process {
+    private:
+        time_t convertToTime(std::string timestamp) {
+            std::tm now;
+
+            std::istringstream iss(timestamp);
+            iss >> std::get_time(&now, "%m/%d/%Y, %I:%M:%S %p");
+            time_t epoch_time = std::mktime(&now);
+
+            return epoch_time;
+        }
+
     public:
         std::string name;
         long long current_instruction;
@@ -19,6 +30,7 @@ class Process {
         static int last_id;
         long long memoryRequired;
         std::vector<AllocatedMemory*> allocatedMemory;
+        time_t age;
 
         Process() {}
 
@@ -33,6 +45,7 @@ class Process {
             this->logFilePath = "./Logs/" + name + ".txt";
             this->memoryRequired = memoryRequired;
             this->allocatedMemory = {};
+            this->age = convertToTime(timestamp);
 
             // FILE* f = fopen(logFilePath.c_str(), "w");
 

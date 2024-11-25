@@ -4,6 +4,11 @@
 #include<string>
 #include"..\DataTypes\Memory.h"
 
+struct MemoryData {
+    uint64_t size; 
+    std::string owningProcess;
+};
+
 class BackingStore {
     private:
         std::map<std::string, std::string> storeDirectory;
@@ -14,12 +19,18 @@ class BackingStore {
 
         }
 
-        AllocatedMemory* retrieve(std::string process_name) {
+        MemoryData retrieve(std::string process_name) {
+            if (storeDirectory.find(process_name) == storeDirectory.end()) {
+                return { 0, "" };
+            }
 
+            //READ FILE
+
+            MemoryData retrievedData;
         }
 
-        void store(AllocatedMemory* memory) {
-
+        void store(AllocatedMemory memory) {
+            
         }
 };
 

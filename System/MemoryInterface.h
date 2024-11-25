@@ -22,12 +22,22 @@ struct MemoryStats {
     std::vector<ProcessMemory> processMemoryRegions;
 };
 
+
+struct ProcessAgeComparator
+{
+    bool operator()(const Process* x, const Process* y) const
+    {
+        return x->age < y->age;
+    }
+};
+
 class AbstractMemoryInterface {
     protected:
         uint64_t startAddress;
         uint64_t endAddress;
         uint64_t memorySize;
         FreeList* freeList;
+        std::set<Process*, ProcessAgeComparator> processesList; 
         std::mutex mtx;
         std::condition_variable cv;
         std::string (*getCurrentTimestamp)();
@@ -45,6 +55,30 @@ class AbstractMemoryInterface {
         }
 
         virtual ~AbstractMemoryInterface() {};
+        virtual Process* getTop() {
+            std::unique_lock<std::mutex> lock(mtx);
+            Process* p = nullptr;
+
+            for(const auto& process: processesList) {
+                if(process->allocatedMemory.size() > 0) {
+                    p = process;
+                    break;
+                }
+            }
+
+            lock.unlock();
+            return p;
+        }
+        virtual void addToProcessList(Process* p) {
+            std::unique_lock<std::mutex> lock(mtx);
+            processesList.insert(p);
+            lock.unlock();
+        };
+        virtual void removeFromProcessList(Process* p) {
+            std::unique_lock<std::mutex> lock(mtx);
+            processesList.erase(p);
+            lock.unlock();
+        };
         virtual std::vector<AllocatedMemory*> allocate(uint64_t size, std::string owningProcess) { return {}; };
         virtual void free(AllocatedMemory* allocated) {};
         virtual void printMemory(long long quantum_cycle) {};
