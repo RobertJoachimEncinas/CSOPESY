@@ -27,11 +27,12 @@ private:
     SchedAlgo algorithm;
 
     Process* removeFromCore() {
+        Process* finished = currentProcess;
         currentProcess->setCore(-1);
         currentProcess = nullptr;
         isCoreActive.store(false);
         this->coreQuantumCountdown = quantumCycles;
-        return currentProcess;
+        return finished;
     }
 
 public:
