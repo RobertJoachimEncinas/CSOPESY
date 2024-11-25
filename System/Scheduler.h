@@ -67,8 +67,14 @@ class Scheduler {
                         process = readyQueue.pop();
 
                         if(process->allocatedMemory.size() == 0) {
-                            memory->reserve(process->memoryRequired);
-                            process->allocatedMemory = memory->allocate(process->memoryRequired, process->name);
+                            uint64_t memoryRequirement = memory->fetchFromBackingStore(process->name);
+
+                            if(memoryRequirement == 0) {
+                                memoryRequirement = process->memoryRequired;
+                            }
+
+                            memory->reserve(memoryRequirement);
+                            process->allocatedMemory = memory->allocate(memoryRequirement, process->name);
                         }
 
                         if(process->allocatedMemory.size() == 0) {

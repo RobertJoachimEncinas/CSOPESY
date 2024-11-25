@@ -240,4 +240,6 @@ _Pvt_Extensions
 
 Logs/**
 !Logs/.gitkeep
+BackingStore/**
+!BackingStore/.gitkeep
 csopesy-log.txt

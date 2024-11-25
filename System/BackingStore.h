@@ -2,36 +2,48 @@
 #define BACKINGSTORE
 #include<map>
 #include<string>
+#include<filesystem>
 #include"..\DataTypes\Memory.h"
 #include"..\DataTypes\Process.h"
 
-struct MemoryData {
-    uint64_t size; 
-    std::string owningProcess;
-};
-
 class BackingStore {
     private:
-        std::map<std::string, std::string> storeDirectory;
-        const std::string backingStoreDirectory = "..\\BackingStore\\"; 
+        const std::string dirPrefix = ".\\BackingStore\\"; 
+        std::filesystem::path directory = ".\\BackingStore\\";
 
     public:
         BackingStore() {
+            if (std::filesystem::exists(directory)) {
+                std::filesystem::remove_all(directory); 
+            } 
 
+            std::filesystem::create_directory(directory); 
+            FILE* f = fopen(".\\BackingStore\\.gitkeep", "w");
+            fclose(f);
         }
 
-        MemoryData retrieve(std::string process_name) {
-            if (storeDirectory.find(process_name) == storeDirectory.end()) {
-                return { 0, "" };
+        uint64_t retrieve(std::string process_name) {
+            std::string backingStorePath = dirPrefix + process_name + ".txt";
+            std::ifstream inputFile(backingStorePath); 
+
+            if (!inputFile) {
+                return 0;
             }
 
-            //READ FILE
+            uint64_t size;
+            inputFile >> size;
 
-            MemoryData retrievedData;
+            inputFile.close();
+            remove(backingStorePath.c_str());
+
+            return size;
         }
 
         void store(Process* p) {
-            std::cout << "STORED " << p->name;
+            std::string backingStorePath = dirPrefix + p->name + ".txt";
+            FILE* f = fopen(backingStorePath.c_str(), "w");
+            fprintf(f, "%d", p->memoryRequired);
+            fclose(f);
         }
 };
 

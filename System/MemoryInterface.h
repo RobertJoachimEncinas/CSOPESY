@@ -114,6 +114,10 @@ class AbstractMemoryInterface {
             }
         }
 
+        virtual uint64_t fetchFromBackingStore(std::string process_name) {
+            return backingStore.retrieve(process_name);
+        }
+
         virtual std::vector<AllocatedMemory*> allocate(uint64_t size, std::string owningProcess) { return {}; };
         virtual void free(AllocatedMemory* allocated) {};
         virtual void printMemory(long long quantum_cycle) {};
