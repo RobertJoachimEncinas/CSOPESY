@@ -76,11 +76,6 @@ class SynchronizedClock {
 
                 if(countdown == 0) {
                     memory->printMemory(this->currentSystemClock.load());
-                    Process* p = memory->getTop();
-
-                    if(p != nullptr)
-                        std::cout << p->name << "\n";
-                    
                     countdown = 5;
                 }
                 countdown--;
@@ -122,7 +117,7 @@ class SynchronizedClock {
 
         void incrementClock() {
             currentSystemClock.store((currentSystemClock.load() + 1) % LLONG_MAX);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
         void turnOff() {

@@ -21,7 +21,7 @@ private:
     std::atomic<long long>* currentSystemClock;
     std::atomic<bool> isCoreActive;
     std::atomic<bool> isCoreOn;
-    std::atomic<bool> isPreempted;
+    std::atomic<bool> shouldPreempt;
     std::atomic<bool> canProceed;
     std::string (*getCurrentTimestamp)();
     SchedAlgo algorithm;
@@ -44,7 +44,7 @@ public:
         currentProcess = nullptr;
         isCoreActive.store(false);
         isCoreOn.store(false);
-        isPreempted.store(false);
+        shouldPreempt.store(false);
         canProceed.store(false);
 
         this->currentSystemClock = currentSystemClock;
@@ -75,23 +75,16 @@ public:
                     coreQuantumCountdown--;
 
                     if(coreQuantumCountdown == 0 && algorithm == RR) {
-                        isPreempted.store(true);
+                        shouldPreempt.store(true);
                     }
 
-                    if(processCompleted || isPreempted.load()) {
-                        if(!processCompleted) {
-                            readyQueue->push(currentProcess);
-                        } else {
-                            memory->removeFromProcessList(currentProcess);
-                            for(const auto& allocatedRegion: currentProcess->allocatedMemory) {
-                                memory->free(allocatedRegion);
-                            }
-
-                            currentProcess->allocatedMemory = {};  
+                    if(processCompleted) {
+                        memory->removeFromProcessList(currentProcess);
+                        for(const auto& allocatedRegion: currentProcess->allocatedMemory) {
+                            memory->free(allocatedRegion);
                         }
 
-                        removeFromCore();
-                        isPreempted.store(false);
+                        currentProcess->allocatedMemory = {};  
                     }
 
                     delayCounter = -1;
@@ -101,6 +94,17 @@ public:
             coreClock = (coreClock + 1) % LLONG_MAX;
             lock(); // Lock self for next iteration
         }
+    }
+
+    void preempt() {
+        readyQueue->push(currentProcess);
+        removeFromCore();
+        coreQuantumCountdown = quantumCycles;
+        shouldPreempt.store(false);
+    }
+
+    bool getShouldPreempt() {
+        return shouldPreempt.load();
     }
 
     bool isActive() {

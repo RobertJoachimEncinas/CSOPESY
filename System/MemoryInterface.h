@@ -9,6 +9,7 @@
 #include<sstream>
 #include "../DataTypes/Memory.h"
 #include "../DataTypes/Freelist.h"
+#include "./BackingStore.h"
 
 struct ProcessMemory {
     uint64_t startAddress;
@@ -41,21 +42,11 @@ class AbstractMemoryInterface {
         std::mutex mtx;
         std::condition_variable cv;
         std::string (*getCurrentTimestamp)();
+        BackingStore backingStore;
 
         virtual MemoryStats computeMemoryStats() { return {0, 0, {}}; };
-    public:
-        AbstractMemoryInterface() {}
 
-        AbstractMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
-            this->memorySize = memorySize;
-            this->startAddress = 0;
-            this->endAddress = memorySize;
-            this->freeList = nullptr;
-            this->getCurrentTimestamp = getCurrentTimestamp;
-        }
-
-        virtual ~AbstractMemoryInterface() {};
-        virtual Process* getTop() {
+        virtual Process* getFirstWithFreeable() {
             std::unique_lock<std::mutex> lock(mtx);
             Process* p = nullptr;
 
@@ -69,11 +60,25 @@ class AbstractMemoryInterface {
             lock.unlock();
             return p;
         }
+    public:
+        AbstractMemoryInterface() {}
+
+        AbstractMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
+            this->memorySize = memorySize;
+            this->startAddress = 0;
+            this->endAddress = memorySize;
+            this->freeList = nullptr;
+            this->getCurrentTimestamp = getCurrentTimestamp;
+        }
+
+        virtual ~AbstractMemoryInterface() {};
+
         virtual void addToProcessList(Process* p) {
             std::unique_lock<std::mutex> lock(mtx);
             processesList.insert(p);
             lock.unlock();
         };
+
         virtual void removeFromProcessList(Process* p) {
             std::unique_lock<std::mutex> lock(mtx);
             processesList.erase(p);
