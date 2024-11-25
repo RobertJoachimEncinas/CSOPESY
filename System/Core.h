@@ -4,7 +4,6 @@
 #include <atomic>
 #include "../DataTypes/Process.h"
 #include "../DataTypes/SchedAlgo.h"
-#include "MemoryInterface.h"
 
 class Core
 {
@@ -23,19 +22,20 @@ private:
     std::atomic<bool> isCoreOn;
     std::atomic<bool> shouldPreempt;
     std::atomic<bool> canProceed;
+    std::atomic<bool> processCompleted;
     std::string (*getCurrentTimestamp)();
     SchedAlgo algorithm;
-    AbstractMemoryInterface* memory;
 
-    void removeFromCore() {
+    Process* removeFromCore() {
         currentProcess->setCore(-1);
         currentProcess = nullptr;
         isCoreActive.store(false);
         this->coreQuantumCountdown = quantumCycles;
+        return currentProcess;
     }
 
 public:
-    Core(int coreId, long long quantumCycles, std::atomic<long long>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm, long long delayPerExec, AbstractMemoryInterface* memory) {
+    Core(int coreId, long long quantumCycles, std::atomic<long long>* currentSystemClock, std::string (*getCurrentTimestamp)(), SchedAlgo algorithm, long long delayPerExec) {
         this->coreId = coreId;
         this->coreClock = 0;
         this->quantumCycles = quantumCycles;
@@ -46,12 +46,12 @@ public:
         isCoreOn.store(false);
         shouldPreempt.store(false);
         canProceed.store(false);
+        processCompleted.store(false);
 
         this->currentSystemClock = currentSystemClock;
         this->getCurrentTimestamp = getCurrentTimestamp;
         this->delayPerExec = delayPerExec;
         this->delayCounter = 0;
-        this->memory = memory;
     }
 
     void assignReadyQueue(TSQueue* queue_ptr) {
@@ -64,27 +64,17 @@ public:
     }
 
     void run() {
-        bool processCompleted = false;
         while(isCoreOn.load()) {
             while(currentSystemClock->load() == this->coreClock && isCoreOn.load()) {} //Halt if at latest time step
             while(!canProceed.load() && isCoreOn.load()) {} // Wait for scheduler
 
             if(isCoreActive.load()){
                 if(delayCounter == delayPerExec) {
-                    processCompleted = currentProcess->executeLine(getCurrentTimestamp(), this->coreId);
+                    processCompleted.store(currentProcess->executeLine(getCurrentTimestamp(), this->coreId));
                     coreQuantumCountdown--;
 
-                    if(coreQuantumCountdown == 0 && algorithm == RR) {
+                    if(coreQuantumCountdown == 0 && algorithm == RR && !processCompleted.load()) {
                         shouldPreempt.store(true);
-                    }
-
-                    if(processCompleted) {
-                        memory->removeFromProcessList(currentProcess);
-                        for(const auto& allocatedRegion: currentProcess->allocatedMemory) {
-                            memory->free(allocatedRegion);
-                        }
-
-                        currentProcess->allocatedMemory = {};  
                     }
 
                     delayCounter = -1;
@@ -103,8 +93,23 @@ public:
         shouldPreempt.store(false);
     }
 
+    Process* finish() {
+        Process* p = removeFromCore();
+        coreQuantumCountdown = quantumCycles;
+        processCompleted.store(false);
+        return p;
+    }
+
     bool getShouldPreempt() {
         return shouldPreempt.load();
+    }
+
+    bool getProcessCompleted() {
+        return processCompleted.load();
+    }
+
+    void setShouldPreempt() {
+        shouldPreempt.store(true);
     }
 
     bool isActive() {

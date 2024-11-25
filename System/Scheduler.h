@@ -45,10 +45,20 @@ class Scheduler {
                 while(currentSystemClock->load() == this->schedulerClock && active.load()) {} // Block if not synced
 
                 for(int i = 0; i < cores->size(); i++) {
-                    if((*cores->at(i)).getShouldPreempt()) {
-                        (*cores->at(i)).preempt();
+                    if(cores->at(i)->getShouldPreempt()) {
+                        cores->at(i)->preempt();
                     }
 
+                    if(cores->at(i)->getProcessCompleted()) {
+                        Process* p = cores->at(i)->finish();
+                        
+                        for(const auto& mem: p->allocatedMemory) {
+                            memory->free(mem);
+                        }
+
+                        p->allocatedMemory = {};
+                    }
+                    
                     if(readyQueue.isEmpty()) {
                         break; //Ready queue for this time step has all been dispatch already, process anything from screen -s that was not synced in the next timestep
                     } 
@@ -57,15 +67,15 @@ class Scheduler {
                         process = readyQueue.pop();
 
                         if(process->allocatedMemory.size() == 0) {
+                            memory->reserve(process->memoryRequired);
                             process->allocatedMemory = memory->allocate(process->memoryRequired, process->name);
-
-                            //Performing backing store
                         }
 
                         if(process->allocatedMemory.size() == 0) {
                             enqueue(process);
                         } else {
                             (*cores->at(i)).assignProcess(process);
+                            memory->addToProcessList(process);
                         }
                     }     
                 }

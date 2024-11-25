@@ -238,9 +238,9 @@ class System
             }
 
             if(isFlatAllocator) {
-                memory = new FlatMemoryInterface(maxMem, getCurrentTimestamp);
+                memory = new FlatMemoryInterface(maxMem, getCurrentTimestamp, std::addressof(cores));
             } else {
-                memory = new PagingMemoryInterface(maxMem, memPerFrame, getCurrentTimestamp);
+                memory = new PagingMemoryInterface(maxMem, memPerFrame, getCurrentTimestamp, std::addressof(cores));
             }
 
             scheduler.setMemoryInterface(memory);
@@ -249,7 +249,7 @@ class System
 
             totalCores = num_cpu;
             for(int i = 0; i < num_cpu; i++) {
-                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec, memory));
+                cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec));
             }
             scheduler.assignReadyQueueToCores();
             processMaxIns = max_ins;
@@ -379,7 +379,6 @@ class System
             long long instructions = processMinIns + (rand() % (processMaxIns - processMinIns + 1));
             // If no duplicates, create and add the new process
             std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), memoryPerProcess);
-            memory->addToProcessList(newProcess.get());
             processes.insert(std::make_pair(process_name, newProcess));
 
             //Add to scheduler

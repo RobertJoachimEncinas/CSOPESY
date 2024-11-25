@@ -10,6 +10,7 @@
 #include "../DataTypes/Memory.h"
 #include "../DataTypes/Freelist.h"
 #include "./BackingStore.h"
+#include "./Core.h"
 
 struct ProcessMemory {
     uint64_t startAddress;
@@ -37,12 +38,14 @@ class AbstractMemoryInterface {
         uint64_t startAddress;
         uint64_t endAddress;
         uint64_t memorySize;
+        uint64_t availableMemory;
         FreeList* freeList;
         std::set<Process*, ProcessAgeComparator> processesList; 
         std::mutex mtx;
         std::condition_variable cv;
         std::string (*getCurrentTimestamp)();
         BackingStore backingStore;
+        std::vector<Core*>* cores;
 
         virtual MemoryStats computeMemoryStats() { return {0, 0, {}}; };
 
@@ -63,12 +66,14 @@ class AbstractMemoryInterface {
     public:
         AbstractMemoryInterface() {}
 
-        AbstractMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
+        AbstractMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)(), std::vector<Core*>* cores) {
             this->memorySize = memorySize;
+            this->availableMemory = memorySize;
             this->startAddress = 0;
             this->endAddress = memorySize;
             this->freeList = nullptr;
             this->getCurrentTimestamp = getCurrentTimestamp;
+            this->cores = cores;
         }
 
         virtual ~AbstractMemoryInterface() {};
@@ -84,6 +89,31 @@ class AbstractMemoryInterface {
             processesList.erase(p);
             lock.unlock();
         };
+
+        virtual void reserve(uint64_t size) {
+            while(size > availableMemory) {
+                Process* p = getFirstWithFreeable();
+
+                if(p == nullptr) {
+                    break;
+                }
+
+                if(p->core != -1) {
+                    cores->at(p->core)->preempt();
+                } 
+
+                backingStore.store(p);
+
+                for(const auto& memory: p->allocatedMemory) {
+                    free(memory);
+                }
+
+                p->allocatedMemory = {};
+
+                removeFromProcessList(p);
+            }
+        }
+
         virtual std::vector<AllocatedMemory*> allocate(uint64_t size, std::string owningProcess) { return {}; };
         virtual void free(AllocatedMemory* allocated) {};
         virtual void printMemory(long long quantum_cycle) {};
@@ -127,14 +157,16 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
 
         FlatMemoryInterface() {}
 
-        FlatMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)()) {
+        FlatMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)(), std::vector<Core*>* cores) {
             this->memorySize = memorySize;
+            this->availableMemory = memorySize;
             this->startAddress = 0;
             this->endAddress = memorySize - 1;
             this->memoryStart = new MemoryChunk(memorySize, 0, nullptr, nullptr, "", false);
             this->freeList = new FirstFitFreeList();
             this->freeList->push(memoryStart);
             this->getCurrentTimestamp = getCurrentTimestamp;
+            this->cores = cores;
         }
 
         std::vector<AllocatedMemory *> allocate(uint64_t size, std::string owningProcess) override {
@@ -151,6 +183,8 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
                 this->memoryStart = allocated;
             }
 
+            availableMemory -= size;
+
             lock.unlock();
             return { allocated };
         }
@@ -163,6 +197,7 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
 
             chunk->owningProcess = "";
             chunk->isInUse = false;
+            availableMemory += allocated->size;
 
             if(previousChunk != nullptr) {
                 if(!previousChunk->isInUse) {
@@ -296,13 +331,15 @@ class PagingMemoryInterface: public AbstractMemoryInterface {
 
         PagingMemoryInterface() {}
 
-        PagingMemoryInterface(uint64_t memorySize, uint64_t frameSize, std::string (*getCurrentTimestamp)()) {
+        PagingMemoryInterface(uint64_t memorySize, uint64_t frameSize, std::string (*getCurrentTimestamp)(), std::vector<Core*>* cores) {
             this->memorySize = memorySize;
+            this->availableMemory = memorySize;
             this->startAddress = 0;
             this->endAddress = memorySize - 1;
             this->frameSize = frameSize;
             this->freeList = new FirstFitPagingFreeList(frameSize);
             this->getCurrentTimestamp = getCurrentTimestamp;
+            this->cores = cores;
             
             createChunks();
         }
@@ -325,6 +362,8 @@ class PagingMemoryInterface: public AbstractMemoryInterface {
                 allocatedMem.push_back(temp);
                 allocatedSize += frameSize;
             }
+
+            availableMemory -= size;
             
             lock.unlock();
             return allocatedMem;
@@ -335,6 +374,7 @@ class PagingMemoryInterface: public AbstractMemoryInterface {
             allocated->owningProcess = "";
             allocated->isInUse = false;
             freeList->push(allocated);
+            availableMemory += allocated->size;
             lock.unlock();
         }
         

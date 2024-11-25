@@ -3,6 +3,7 @@
 #include<map>
 #include<string>
 #include"..\DataTypes\Memory.h"
+#include"..\DataTypes\Process.h"
 
 struct MemoryData {
     uint64_t size; 
@@ -29,8 +30,8 @@ class BackingStore {
             MemoryData retrievedData;
         }
 
-        void store(AllocatedMemory memory) {
-            
+        void store(Process* p) {
+            std::cout << "STORED " << p->name;
         }
 };
 
