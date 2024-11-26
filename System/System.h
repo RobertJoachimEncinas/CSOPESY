@@ -366,6 +366,7 @@ class System
                 }
             }
             std::cout << "Error! Process " << process_name << " not found.\n";
+            processHistory["Main"].emplace_back("Error! Process " + process_name + " not found.\n", "RESET");
         }
 
         std::shared_ptr<Process> cmd_screen_add(const std::string& process_name) {
@@ -552,6 +553,7 @@ class System
                 cmd_report_util();
             }
             else if (command == "process-smi"){
+                processHistory["Main"].emplace_back("Enter a command: process-smi\n", "RESET");
                 std::vector<Process> runningProcesses;
                 int running_ctr = 0; 
 
@@ -576,26 +578,72 @@ class System
                 int cpu_util = static_cast<double>(running_ctr) / totalCores * 100;
                 cpu_util = cpu_util < 0 ? 0 : cpu_util;   
                 printColored("--------------------------------------------------\n", BLUE);
-                printColored("|", BLUE);       
-                std::cout << " PROCESS-SMI V01.00 Driver Version: 01.00 ";
+                printColored("|", BLUE);  
+                std::cout << " PROCESS-SMI V01";
+                printColored(".00 ", YELLOW);
+                std::cout << "Driver Version: ";
+                printColored("01.00 ", YELLOW);
                 printColored("|\n", BLUE);
                 printColored("--------------------------------------------------\n", BLUE);
-                std::cout << "CPU utilization: " << cpu_util <<  "%\n";
-                std::cout << "Memory Usage: " << memory_usage << "MiB / " << memAdd << "MiB" << "\n";
-                std::cout << "Memory Util: " << memory_util << "%\n";
+                std::cout << "CPU utilization: ";
+                printColored(std::to_string(cpu_util), YELLOW);
+                printColored("%\n", BLUE);
+                std::cout << "Memory Usage: ";
+                printColored(std::to_string(memory_usage), YELLOW);
+                printColored("MiB ", YELLOW);
+                printColored("/ ", BLUE);
+                printColored(std::to_string(memAdd), YELLOW);
+                printColored("MiB\n", YELLOW);
+                std::cout << "Memory Util: ";
+                printColored(std::to_string(memory_util), YELLOW);
+                printColored("%\n", BLUE);
                 printColored("==================================================\n", BLUE);
                 std::cout << "Running processes ";
                 printColored("and", BLUE);
                 std::cout << " memory usage:\n";
                 printColored("--------------------------------------------------\n", BLUE);
 
+                // processHistory
+                processHistory["Main"].emplace_back("--------------------------------------------------\n", "BLUE");
+                processHistory["Main"].emplace_back("|", "BLUE");
+                processHistory["Main"].emplace_back(" PROCESS-SMI V01", "RESET");
+                processHistory["Main"].emplace_back(".00 ", "YELLOW");
+                processHistory["Main"].emplace_back("Driver Version: ", "RESET");
+                processHistory["Main"].emplace_back("01.00 ", "YELLOW");
+                processHistory["Main"].emplace_back("|\n", "BLUE");
+                processHistory["Main"].emplace_back("--------------------------------------------------\n", "BLUE");
+                processHistory["Main"].emplace_back("CPU utilization: ", "RESET");
+                processHistory["Main"].emplace_back(std::to_string(cpu_util), "YELLOW");
+                processHistory["Main"].emplace_back("%\n", "BLUE");
+                processHistory["Main"].emplace_back("Memory Usage: ", "RESET");
+                processHistory["Main"].emplace_back(std::to_string(memory_usage), "YELLOW");
+                processHistory["Main"].emplace_back("MiB ", "YELLOW");
+                processHistory["Main"].emplace_back("/ ", "BLUE");
+                processHistory["Main"].emplace_back(std::to_string(memAdd), "YELLOW");
+                processHistory["Main"].emplace_back("MiB\n", "YELLOW");
+                processHistory["Main"].emplace_back("Memory Util: ", "RESET");
+                processHistory["Main"].emplace_back(std::to_string(memory_util), "YELLOW");
+                processHistory["Main"].emplace_back("%\n", "BLUE");
+                processHistory["Main"].emplace_back("==================================================\n", "BLUE");
+                processHistory["Main"].emplace_back("Running processes ", "RESET");
+                processHistory["Main"].emplace_back("and", "BLUE");
+                processHistory["Main"].emplace_back(" memory usage:\n", "RESET");
+                processHistory["Main"].emplace_back("--------------------------------------------------\n", "BLUE");
+                
 
                 for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
                     int total_memory = (memoryRegion->endAddress - memoryRegion->startAddress)+1;
-                    std::cout << memoryRegion->process_name << " " << total_memory << "MiB\n";
+                    std::cout << memoryRegion->process_name << " ";
+                    printColored(std::to_string(total_memory), YELLOW);
+                    printColored("MiB\n", YELLOW);
+
+                    // processHistory
+                    processHistory["Main"].emplace_back(std::to_string(total_memory), "YELLOW");
+                    processHistory["Main"].emplace_back("MiB\n", "YELLOW");
                     // std::cout << memoryRegion->endAddress << "\n" << memoryRegion->process_name << "\n" << memoryRegion->startAddress << "\n\n";                
                 }
-                std::cout << "\n\n";
+                printColored("--------------------------------------------------\n\n", BLUE);
+                processHistory["Main"].emplace_back("--------------------------------------------------\n\n", "BLUE");
             }
             else {
                 processHistory["Main"].emplace_back("Enter a command: "+ input +"\n", "RESET");
