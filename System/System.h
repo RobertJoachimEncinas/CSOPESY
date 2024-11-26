@@ -570,7 +570,7 @@ class System
                 std::cout << " PROCESS-SMI V01.00 Driver Version: 01.00 ";
                 printColored("|\n", BLUE);
                 printColored("--------------------------------------------------\n", BLUE);
-                std::cout << "\nCPU utilization: " << cpu_util << "%\n";
+                std::cout << "CPU utilization: " << cpu_util << "%\n";
                 std::cout << "Memory Usage: "  << "\n";
                 std::cout << "Memory Util: "  << "\n";
                 printColored("==================================================\n", BLUE);
