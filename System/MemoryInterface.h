@@ -125,6 +125,10 @@ class AbstractMemoryInterface {
         virtual std::vector<AllocatedMemory*> allocate(uint64_t size, std::string owningProcess) { return {}; };
         virtual void free(AllocatedMemory* allocated) {};
         virtual void printMemory(long long quantum_cycle) {};
+
+        virtual MemoryStats getMemoryStats() {
+            return computeMemoryStats();
+        }
 };
 
 class FlatMemoryInterface: public AbstractMemoryInterface {

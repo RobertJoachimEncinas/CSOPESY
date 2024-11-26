@@ -13,6 +13,7 @@
 #include <ctime>
 #include <iomanip>
 #include <memory>
+#include "MemoryInterface.h"
 
 class System
 {
@@ -26,6 +27,8 @@ class System
         long long processMaxIns = 100;
         long long processFreq = 1;
         long long memoryPerProcess = 0;
+        MemoryStats computeMemoryStats();
+
 
         std::string current_process; // Global variable to store the current process
         std::map<std::string, std::vector<std::pair<std::string, std::string>>> processHistory;
@@ -545,6 +548,36 @@ class System
                 }
                 cmd_report_util();
             }
+            else if (command == "process-smi"){
+                std::vector<Process> runningProcesses;
+                int running_ctr = 0; 
+
+
+                for(const auto& process: processes) {
+                    if(!process.second->completed) {
+                        runningProcesses.push_back(*process.second);
+                        if (process.second->core != -1){
+                            running_ctr++;
+                        }
+                    }
+                }
+
+                int cpu_util = static_cast<double>(running_ctr) / totalCores * 100;
+                cpu_util = cpu_util < 0 ? 0 : cpu_util;                
+                std::cout << "\nCPU utilization: " << cpu_util << "%\n";
+                std::cout << "Memory Usage: "  << "\n";
+                std::cout << "Memory Util: "  << "\n";
+
+                printColored("-----------------------------------------\n", BLUE);
+                std::cout << "Running Processes and Memory usage:\n";
+                MemoryStats stats = memory->getMemoryStats();
+
+                for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
+                    int total_memory = (memoryRegion->endAddress - memoryRegion->startAddress)+1;
+                    std::cout << memoryRegion->process_name << " " << total_memory << "\n";
+                    // std::cout << memoryRegion->endAddress << "\n" << memoryRegion->process_name << "\n" << memoryRegion->startAddress << "\n\n";                
+                }
+            }
             else {
                 processHistory["Main"].emplace_back("Enter a command: "+ input +"\n", "RESET");
                 std::cout << "Error! Unrecognized command\n";
@@ -552,4 +585,3 @@ class System
             }
         }
 };
-
