@@ -277,6 +277,8 @@ class System
             }
 
             synchronizer.startTester();
+
+            while(!tester.isActive()) {};
             std::cout << "Scheduler started\n";
             processHistory["Main"].emplace_back("Scheduler started\n", "RESET");
         }
