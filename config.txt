@@ -1,10 +1,10 @@
-num-cpu 2
-scheduler "rr"
+num-cpu 4
+scheduler "fcfs"
 quantum-cycles 4
 batch-process-freq 1
-min-ins 10
-max-ins 10
-delays-per-exec 1
+min-ins 5
+max-ins 5
+delays-per-exec 0
 max-overall-mem 32
 mem-per-frame 16
 mem-per-proc 16

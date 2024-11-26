@@ -24,6 +24,7 @@ private:
     std::atomic<bool> canProceed;
     std::atomic<bool> processCompleted;
     std::string (*getCurrentTimestamp)();
+    std::mutex mtx;
     SchedAlgo algorithm;
 
     Process* removeFromCore() {
@@ -68,17 +69,23 @@ public:
         while(isCoreOn.load()) {
             while(currentSystemClock->load() == this->coreClock && isCoreOn.load()) {} //Halt if at latest time step
             while(!canProceed.load() && isCoreOn.load()) {} // Wait for scheduler
+            while((processCompleted.load() || shouldPreempt.load()) && isCoreOn.load()) {}
 
             if(isCoreActive.load()){
                 if(delayCounter == delayPerExec) {
                     processCompleted.store(currentProcess->executeLine(getCurrentTimestamp(), this->coreId));
-                    coreQuantumCountdown--;
 
-                    if(coreQuantumCountdown == 0 && algorithm == RR && !processCompleted.load()) {
-                        shouldPreempt.store(true);
+                    if(!processCompleted.load()) {
+                        coreQuantumCountdown--;
+
+                        if(coreQuantumCountdown == 0 && algorithm == RR) {
+                            shouldPreempt.store(true);
+                        }
+
                     }
 
                     delayCounter = -1;
+
                 }
                 delayCounter++;
             }
@@ -88,16 +95,22 @@ public:
     }
 
     void preempt() {
+        std::unique_lock<std::mutex> lock(mtx);
         readyQueue->push(currentProcess);
         removeFromCore();
         coreQuantumCountdown = quantumCycles;
+        processCompleted.store(false);
         shouldPreempt.store(false);
+        lock.unlock();
     }
 
     Process* finish() {
+        std::unique_lock<std::mutex> lock(mtx);
         Process* p = removeFromCore();
         coreQuantumCountdown = quantumCycles;
         processCompleted.store(false);
+        shouldPreempt.store(false);
+        lock.unlock();
         return p;
     }
 
@@ -118,9 +131,13 @@ public:
     }
 
     void assignProcess(Process* p) {
+        std::unique_lock<std::mutex> lock(mtx);
         this->currentProcess = p;
         p->setCore(this->coreId);
         this->isCoreActive.store(true);
+        processCompleted.store(false);
+        shouldPreempt.store(false);
+        lock.unlock();
     }
 
     bool isOn() {

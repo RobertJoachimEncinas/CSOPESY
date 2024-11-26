@@ -90,7 +90,7 @@ class AbstractMemoryInterface {
             lock.unlock();
         };
 
-        virtual void reserve(uint64_t size) {
+        virtual void reserve(uint64_t size, std::string processName) {
             while(size > availableMemory) {
                 Process* p = getFirstWithFreeable();
 
@@ -98,9 +98,11 @@ class AbstractMemoryInterface {
                     break;
                 }
 
-                if(p->core != -1) {
+                if(p->core != -1 && !p->completed) {
                     cores->at(p->core)->preempt();
-                } 
+                } else if(p->core != -1 && p->completed) {
+                    cores->at(p->core)->finish();
+                }
 
                 backingStore.store(p);
 
@@ -256,6 +258,19 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
         void printMemory(long long quantum_cycle) override {
             MemoryStats stats = computeMemoryStats();
             std::ostringstream oss;
+
+            std::string fileMemoryPath = "./Logs/memory_stamp_" + std::to_string(quantum_cycle) + ".txt";
+            FILE* f = fopen(fileMemoryPath.c_str(), "a");
+            fprintf(f, "Timestamp: (%s)\n", getCurrentTimestamp().c_str());
+            fprintf(f, "Number of process in memory: %llu\n", stats.processes_in_memory);
+            fprintf(f, "Total external fragmentation in KB: %llu\n", stats.totalFragmentation);
+            fprintf(f, "----end---- = %llu\n\n", endAddress);
+            for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
+                oss << memoryRegion->endAddress << "\n" << memoryRegion->process_name << "\n" << memoryRegion->startAddress << "\n\n";                
+            }
+            fprintf(f, "%s", oss.str().c_str());
+            fprintf(f, "----start---- = %llu\n\n", startAddress);
+            fclose(f);
         }
 };  
 

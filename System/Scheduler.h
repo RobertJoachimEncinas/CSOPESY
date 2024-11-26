@@ -45,10 +45,6 @@ class Scheduler {
                 while(currentSystemClock->load() == this->schedulerClock && active.load()) {} // Block if not synced
 
                 for(int i = 0; i < cores->size(); i++) {
-                    if(cores->at(i)->getShouldPreempt()) {
-                        cores->at(i)->preempt();
-                    }
-
                     if(cores->at(i)->getProcessCompleted()) {
                         Process* p = cores->at(i)->finish();
                         
@@ -57,8 +53,15 @@ class Scheduler {
                         }
 
                         p->allocatedMemory = {};
+
+                        memory->removeFromProcessList(p);
+                    } else if(cores->at(i)->getShouldPreempt()) {
+                        std::cout << "PREEMPTED\n";
+                        cores->at(i)->preempt();
                     }
-                    
+                }
+
+                for(int i = 0; i < cores->size(); i++) {
                     if(readyQueue.isEmpty()) {
                         break; //Ready queue for this time step has all been dispatch already, process anything from screen -s that was not synced in the next timestep
                     } 
@@ -73,7 +76,7 @@ class Scheduler {
                                 memoryRequirement = process->memoryRequired;
                             }
 
-                            memory->reserve(memoryRequirement);
+                            memory->reserve(memoryRequirement, process->name);
                             process->allocatedMemory = memory->allocate(memoryRequirement, process->name);
                         }
 
