@@ -554,6 +554,11 @@ class System
             }
             else if (command == "process-smi"){
                 processHistory["Main"].emplace_back("Enter a command: process-smi\n", "RESET");
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    processHistory["Main"].emplace_back("Error! System not initialized.\n", "RESET");
+                    return;
+                }
                 std::vector<Process> runningProcesses;
                 int running_ctr = 0; 
 
