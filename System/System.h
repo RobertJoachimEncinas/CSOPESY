@@ -562,21 +562,30 @@ class System
                     }
                 }
 
+                MemoryStats stats = memory->getMemoryStats();
                 int cpu_util = static_cast<double>(running_ctr) / totalCores * 100;
-                cpu_util = cpu_util < 0 ? 0 : cpu_util;                
+                cpu_util = cpu_util < 0 ? 0 : cpu_util;   
+                printColored("--------------------------------------------------\n", BLUE);
+                printColored("|", BLUE);       
+                std::cout << " PROCESS-SMI V01.00 Driver Version: 01.00 ";
+                printColored("|\n", BLUE);
+                printColored("--------------------------------------------------\n", BLUE);
                 std::cout << "\nCPU utilization: " << cpu_util << "%\n";
                 std::cout << "Memory Usage: "  << "\n";
                 std::cout << "Memory Util: "  << "\n";
+                printColored("==================================================\n", BLUE);
+                std::cout << "Running processes ";
+                printColored("and", BLUE);
+                std::cout << " memory usage:\n";
+                printColored("--------------------------------------------------\n", BLUE);
 
-                printColored("-----------------------------------------\n", BLUE);
-                std::cout << "Running Processes and Memory usage:\n";
-                MemoryStats stats = memory->getMemoryStats();
 
                 for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
                     int total_memory = (memoryRegion->endAddress - memoryRegion->startAddress)+1;
                     std::cout << memoryRegion->process_name << " " << total_memory << "\n";
                     // std::cout << memoryRegion->endAddress << "\n" << memoryRegion->process_name << "\n" << memoryRegion->startAddress << "\n\n";                
                 }
+                std::cout << "\n\n";
             }
             else {
                 processHistory["Main"].emplace_back("Enter a command: "+ input +"\n", "RESET");
