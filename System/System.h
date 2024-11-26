@@ -472,7 +472,7 @@ class System
                 terminate();
                 std::exit(0);
             }
-            else if (command == "initialize") {
+            else if (command == "initialize" || command == "init") {
                 processHistory["Main"].emplace_back("Enter a command: initialize\n", "RESET");
                 cmd_initialize();
             }
@@ -516,7 +516,7 @@ class System
                     processHistory["Main"].emplace_back("Error! Correct usage: screen -s <process_name> or screen -r <process_name> or screen -ls\n", "RESET");
                 }
             }
-            else if (command == "scheduler-test") {
+            else if (command == "scheduler-test" || command == "st") {
                 processHistory["Main"].emplace_back("Enter a command: scheduler-test\n", "RESET");
 
                 if(!isInitialized) {
@@ -526,7 +526,7 @@ class System
                 }
                 cmd_scheduler_test();
             }
-            else if (command == "scheduler-stop") {
+            else if (command == "scheduler-stop" || command == "ss") {
                 processHistory["Main"].emplace_back("Enter a command: scheduler-stop\n", "RESET");
 
                 if(!isInitialized) {

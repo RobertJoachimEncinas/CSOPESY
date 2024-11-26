@@ -56,7 +56,6 @@ class Scheduler {
 
                         memory->removeFromProcessList(p);
                     } else if(cores->at(i)->getShouldPreempt()) {
-                        std::cout << "PREEMPTED\n";
                         cores->at(i)->preempt();
                     }
                 }

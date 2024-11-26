@@ -50,7 +50,6 @@ class AbstractMemoryInterface {
         virtual MemoryStats computeMemoryStats() { return {0, 0, {}}; };
 
         virtual Process* getFirstWithFreeable() {
-            std::unique_lock<std::mutex> lock(mtx);
             Process* p = nullptr;
 
             for(const auto& process: processesList) {
@@ -60,9 +59,10 @@ class AbstractMemoryInterface {
                 }
             }
 
-            lock.unlock();
             return p;
         }
+
+        virtual void nonLockingFree(AllocatedMemory* allocated) {}
     public:
         AbstractMemoryInterface() {}
 
@@ -91,12 +91,14 @@ class AbstractMemoryInterface {
         };
 
         virtual void reserve(uint64_t size, std::string processName) {
+            std::unique_lock<std::mutex> lock(mtx);
             while(size > availableMemory) {
                 Process* p = getFirstWithFreeable();
 
                 if(p == nullptr) {
                     break;
                 }
+                std::cout << p->name << std::endl;
 
                 if(p->core != -1 && !p->completed) {
                     cores->at(p->core)->preempt();
@@ -107,13 +109,14 @@ class AbstractMemoryInterface {
                 backingStore.store(p);
 
                 for(const auto& memory: p->allocatedMemory) {
-                    free(memory);
+                    nonLockingFree(memory);
                 }
 
                 p->allocatedMemory = {};
 
-                removeFromProcessList(p);
+                processesList.erase(p);
             }
+            lock.unlock();
         }
 
         virtual uint64_t fetchFromBackingStore(std::string process_name) {
@@ -149,54 +152,7 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
             return stats;
         }
 
-    public:
-        ~FlatMemoryInterface() {
-            delete freeList;
-            MemoryChunk *next, *temp;
-            temp = memoryStart;
-            do {
-                next = temp->next;
-                delete temp;
-                temp = next;
-            } while(temp != nullptr);
-        }
-
-        FlatMemoryInterface() {}
-
-        FlatMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)(), std::vector<Core*>* cores) {
-            this->memorySize = memorySize;
-            this->availableMemory = memorySize;
-            this->startAddress = 0;
-            this->endAddress = memorySize - 1;
-            this->memoryStart = new MemoryChunk(memorySize, 0, nullptr, nullptr, "", false);
-            this->freeList = new FirstFitFreeList();
-            this->freeList->push(memoryStart);
-            this->getCurrentTimestamp = getCurrentTimestamp;
-            this->cores = cores;
-        }
-
-        std::vector<AllocatedMemory *> allocate(uint64_t size, std::string owningProcess) override {
-            std::unique_lock<std::mutex> lock(mtx);
-            MemoryChunk* allocated = (MemoryChunk*) freeList->pop(size);
-
-            if(allocated == nullptr) {
-                return {};
-            }
-
-            allocated->owningProcess = owningProcess;
-
-            if(allocated->startAddress == 0) {
-                this->memoryStart = allocated;
-            }
-
-            availableMemory -= size;
-
-            lock.unlock();
-            return { allocated };
-        }
-
-        void free(AllocatedMemory* allocated) override {
-            std::unique_lock<std::mutex> lock(mtx);
+        void nonLockingFree(AllocatedMemory* allocated) override {
             MemoryChunk* chunk = (MemoryChunk*) allocated;
             MemoryChunk* previousChunk = (chunk)->prev;
             MemoryChunk* nextChunk = chunk->next;
@@ -252,6 +208,57 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
 
             //Add the freed and coalesced chunk into the freelist
             freeList->push(chunk);
+        }
+
+    public:
+        ~FlatMemoryInterface() {
+            delete freeList;
+            MemoryChunk *next, *temp;
+            temp = memoryStart;
+            do {
+                next = temp->next;
+                delete temp;
+                temp = next;
+            } while(temp != nullptr);
+        }
+
+        FlatMemoryInterface() {}
+
+        FlatMemoryInterface(uint64_t memorySize, std::string (*getCurrentTimestamp)(), std::vector<Core*>* cores) {
+            this->memorySize = memorySize;
+            this->availableMemory = memorySize;
+            this->startAddress = 0;
+            this->endAddress = memorySize - 1;
+            this->memoryStart = new MemoryChunk(memorySize, 0, nullptr, nullptr, "", false);
+            this->freeList = new FirstFitFreeList();
+            this->freeList->push(memoryStart);
+            this->getCurrentTimestamp = getCurrentTimestamp;
+            this->cores = cores;
+        }
+
+        std::vector<AllocatedMemory *> allocate(uint64_t size, std::string owningProcess) override {
+            std::unique_lock<std::mutex> lock(mtx);
+            MemoryChunk* allocated = (MemoryChunk*) freeList->pop(size);
+
+            if(allocated == nullptr) {
+                return {};
+            }
+
+            allocated->owningProcess = owningProcess;
+
+            if(allocated->startAddress == 0) {
+                this->memoryStart = allocated;
+            }
+
+            availableMemory -= size;
+
+            lock.unlock();
+            return { allocated };
+        }
+
+        void free(AllocatedMemory* allocated) override {
+            std::unique_lock<std::mutex> lock(mtx);
+            nonLockingFree(allocated);
             lock.unlock();
         }
         
@@ -339,6 +346,13 @@ class PagingMemoryInterface: public AbstractMemoryInterface {
             }
         }
 
+        void nonLockingFree(AllocatedMemory* allocated) override {
+            allocated->owningProcess = "";
+            allocated->isInUse = false;
+            freeList->push(allocated);
+            availableMemory += allocated->size;
+        }
+
     public:
         ~PagingMemoryInterface() {
             delete freeList;
@@ -390,10 +404,7 @@ class PagingMemoryInterface: public AbstractMemoryInterface {
 
         void free(AllocatedMemory* allocated) override {
             std::unique_lock<std::mutex> lock(mtx);
-            allocated->owningProcess = "";
-            allocated->isInUse = false;
-            freeList->push(allocated);
-            availableMemory += allocated->size;
+            nonLockingFree(allocated);
             lock.unlock();
         }
         
