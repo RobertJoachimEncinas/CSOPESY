@@ -162,7 +162,6 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
 
             chunk->owningProcess = "";
             chunk->isInUse = false;
-            availableMemory += allocated->size;
 
             if(previousChunk != nullptr) {
                 if(!previousChunk->isInUse) {
@@ -237,6 +236,34 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
             this->freeList->push(memoryStart);
             this->getCurrentTimestamp = getCurrentTimestamp;
             this->cores = cores;
+        }
+
+        void reserve(uint64_t size, std::string processName) override {
+            std::unique_lock<std::mutex> lock(mtx);
+            while(!(((FirstFitFreeList*) freeList)->hasAvailable(size))) {
+                Process* p = getFirstWithFreeable();
+
+                if(p == nullptr) {
+                    break;
+                }
+
+                if(p->core != -1 && !p->completed) {
+                    cores->at(p->core)->preempt();
+                } else if(p->core != -1 && p->completed) {
+                    cores->at(p->core)->finish();
+                }
+
+                backingStore.store(p);
+
+                for(const auto& memory: p->allocatedMemory) {
+                    nonLockingFree(memory);
+                }
+
+                p->allocatedMemory = {};
+
+                processesList.erase(p);
+            }
+            lock.unlock();
         }
 
         std::vector<AllocatedMemory *> allocate(uint64_t size, std::string owningProcess) override {

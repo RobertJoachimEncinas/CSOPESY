@@ -49,6 +49,16 @@ public:
     void push(AllocatedMemory* chunk) override {
         chunks.insert((MemoryChunk*) chunk);
     }
+
+    bool hasAvailable(uint64_t size) {
+        for(const auto& chunk: chunks) {
+            if(chunk->size >= size) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 };
 
 class FirstFitPagingFreeList: public FreeList {
