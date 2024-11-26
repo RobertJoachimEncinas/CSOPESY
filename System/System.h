@@ -27,6 +27,7 @@ class System
         long long processMaxIns = 100;
         long long processFreq = 1;
         long long memoryPerProcess = 0;
+        int memAdd = 0;
         MemoryStats computeMemoryStats();
 
 
@@ -241,8 +242,10 @@ class System
             }
 
             if(isFlatAllocator) {
+                memAdd = maxMem;
                 memory = new FlatMemoryInterface(maxMem, getCurrentTimestamp, std::addressof(cores));
             } else {
+                memAdd = maxMem;
                 memory = new PagingMemoryInterface(maxMem, memPerFrame, getCurrentTimestamp, std::addressof(cores));
             }
 
@@ -563,6 +566,13 @@ class System
                 }
 
                 MemoryStats stats = memory->getMemoryStats();
+                int memory_usage = 0;
+                for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
+                    int mem_usage = (memoryRegion->endAddress - memoryRegion->startAddress)+1;
+                    memory_usage += mem_usage;
+                }
+
+                int memory_util = static_cast<double>(memory_usage) / memAdd * 100;
                 int cpu_util = static_cast<double>(running_ctr) / totalCores * 100;
                 cpu_util = cpu_util < 0 ? 0 : cpu_util;   
                 printColored("--------------------------------------------------\n", BLUE);
@@ -570,9 +580,9 @@ class System
                 std::cout << " PROCESS-SMI V01.00 Driver Version: 01.00 ";
                 printColored("|\n", BLUE);
                 printColored("--------------------------------------------------\n", BLUE);
-                std::cout << "CPU utilization: " << cpu_util << "%\n";
-                std::cout << "Memory Usage: "  << "\n";
-                std::cout << "Memory Util: "  << "\n";
+                std::cout << "CPU utilization: " << cpu_util <<  "%\n";
+                std::cout << "Memory Usage: " << memory_usage << "MiB / " << memAdd << "MiB" << "\n";
+                std::cout << "Memory Util: " << memory_util << "%\n";
                 printColored("==================================================\n", BLUE);
                 std::cout << "Running processes ";
                 printColored("and", BLUE);
@@ -582,7 +592,7 @@ class System
 
                 for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
                     int total_memory = (memoryRegion->endAddress - memoryRegion->startAddress)+1;
-                    std::cout << memoryRegion->process_name << " " << total_memory << "\n";
+                    std::cout << memoryRegion->process_name << " " << total_memory << "MiB\n";
                     // std::cout << memoryRegion->endAddress << "\n" << memoryRegion->process_name << "\n" << memoryRegion->startAddress << "\n\n";                
                 }
                 std::cout << "\n\n";
