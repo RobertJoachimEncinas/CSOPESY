@@ -29,7 +29,7 @@ struct ProcessAgeComparator
 {
     bool operator()(const Process* x, const Process* y) const
     {
-        return x->age < y->age;
+        return x->id < y->id;
     }
 };
 
@@ -98,7 +98,6 @@ class AbstractMemoryInterface {
                 if(p == nullptr) {
                     break;
                 }
-                std::cout << p->name << std::endl;
 
                 if(p->core != -1 && !p->completed) {
                     cores->at(p->core)->preempt();

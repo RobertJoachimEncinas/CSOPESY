@@ -36,7 +36,7 @@ class Process {
 
         Process(std::string name, long long total_instructions, std::string timestamp, long long memoryRequired) {
             this->name = name;
-            this->id = last_id++;;
+            this->id = last_id++;
             this->current_instruction = 0;
             this->total_instructions = total_instructions;
             this->timestamp = timestamp;
