@@ -652,6 +652,31 @@ class System
                 printColored("--------------------------------------------------\n\n", BLUE);
                 processHistory["Main"].emplace_back("--------------------------------------------------\n\n", "BLUE");
             }
+            else if (command == "vmstat"){
+                processHistory["Main"].emplace_back("Enter a command: vmstat\n", "RESET");
+                if(!isInitialized) {
+                    std::cout << "Error! System not initialized.\n";
+                    processHistory["Main"].emplace_back("Error! System not initialized.\n", "RESET");
+                    return;
+                }
+
+                MemoryStats stats = memory->getMemoryStats();
+                int memory_usage = 0;
+                for (auto memoryRegion = stats.processMemoryRegions.rbegin(); memoryRegion != stats.processMemoryRegions.rend(); ++memoryRegion) {
+                    int mem_usage = (memoryRegion->endAddress - memoryRegion->startAddress)+1;
+                    memory_usage += mem_usage;
+                }
+                int free_memory = memAdd - memory_usage;
+                
+                printf("%13d %s\n", memAdd, "K total memory");
+                printf("%13d %s\n", memory_usage, "K used memory");
+                printf("%13d %s\n", free_memory, "K free memory");
+                printf("%13s %s\n", "", "idle cpu ticks");
+                printf("%13s %s\n", "", "active cpu ticks");
+                printf("%13s %s\n", "", "total cpu ticks");
+                printf("%13s %s\n", "", "num paged in");
+                printf("%13s %s\n\n", "", "num paged out");
+            }
             else {
                 processHistory["Main"].emplace_back("Enter a command: "+ input +"\n", "RESET");
                 std::cout << "Error! Unrecognized command\n";
