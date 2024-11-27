@@ -672,15 +672,26 @@ class System
                     memory_usage += mem_usage;
                 }
                 int free_memory = memAdd - memory_usage;
+
+                TickData totalTickData = { 0, 0, 0 };
+                TickData temp;
+
+                for(auto const& core: cores) {
+                    temp = core->getTickData();
+                    totalTickData.total += temp.total;
+                    totalTickData.active += temp.active;
+                    totalTickData.idle += temp.idle;
+                }
                 
                 printf("%13d %s\n", memAdd, "K total memory");
                 printf("%13d %s\n", memory_usage, "K used memory");
                 printf("%13d %s\n", free_memory, "K free memory");
-                printf("%13s %s\n", "", "idle cpu ticks");
-                printf("%13s %s\n", "", "active cpu ticks");
-                printf("%13s %s\n", "", "total cpu ticks");
-                printf("%13s %s\n", stats.pagedInCount, "num paged in");
-                printf("%13s %s\n\n", stats.pagedOutCount, "num paged out");
+                printf("%13lld %s\n", totalTickData.idle, "idle cpu ticks");
+                printf("%13lld %s\n", totalTickData.active, "active cpu ticks");
+                printf("%13lld %s\n", totalTickData.total, "total cpu ticks");
+                printf("%13llu %s\n", stats.pagedInCount, "num paged in");
+                printf("%13llu %s\n\n", stats.pagedOutCount, "num paged out");
+                printColored("--------------------------------------------------\n", BLUE);
             }
             else {
                 processHistory["Main"].emplace_back("Enter a command: "+ input +"\n", "RESET");

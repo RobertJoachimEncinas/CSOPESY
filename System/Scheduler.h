@@ -13,6 +13,7 @@ class Scheduler {
         std::thread t;
         std::atomic<bool> active;
         std::atomic<long long>* currentSystemClock;
+        std::mutex mtx;
         AbstractMemoryInterface* memory;
 
     public:
@@ -88,7 +89,9 @@ class Scheduler {
                     }     
                 }
 
+                std::unique_lock<std::mutex> lock(mtx);
                 this->schedulerClock++;
+                lock.unlock();
             }
         }
 
@@ -112,6 +115,7 @@ class Scheduler {
         }
 
         long long getTime() {
+            std::lock_guard<std::mutex> lock(mtx);
             return this->schedulerClock;
         }
 };

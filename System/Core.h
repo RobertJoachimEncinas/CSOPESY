@@ -98,7 +98,9 @@ public:
                 activeTicks++;
                 delayCounter++;
             }
+            std::unique_lock<std::mutex> l(mtx);
             coreClock = (coreClock + 1) % LLONG_MAX;
+            l.unlock();
             lock(); // Lock self for next iteration
         }
     }
@@ -180,6 +182,7 @@ public:
     }
 
     long long getTime() {
+        std::lock_guard<std::mutex> l(mtx);
         return this->coreClock;
     }
 };

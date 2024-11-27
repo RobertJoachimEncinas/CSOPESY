@@ -33,7 +33,7 @@ class BackingStore {
             this->isPagingAllocator = isPaging;
 
             if(isPagingAllocator) {
-                this->pageSize = pageSize;
+                this->pageSize = size;
             } else {
                 this->pageSize = 0;
             }
