@@ -5,6 +5,12 @@
 #include "../DataTypes/Process.h"
 #include "../DataTypes/SchedAlgo.h"
 
+struct TickData {
+    long long total;
+    long long active;
+    long long idle;
+};
+
 class Core
 {
 private:
@@ -14,6 +20,7 @@ private:
     long long coreQuantumCountdown; // processFreqCounter for when to preempt process
     long long delayPerExec;     // delay per execution
     long long delayCounter;     // delay counter
+    long long activeTicks;
     std::thread t;
     Process* currentProcess;
     TSQueue* readyQueue;
@@ -43,6 +50,7 @@ public:
         this->quantumCycles = quantumCycles;
         this->coreQuantumCountdown = quantumCycles;
         this->algorithm = algorithm;
+        this->activeTicks = 0;
         currentProcess = nullptr;
         isCoreActive.store(false);
         isCoreOn.store(false);
@@ -87,11 +95,19 @@ public:
                     delayCounter = -1;
 
                 }
+                activeTicks++;
                 delayCounter++;
             }
             coreClock = (coreClock + 1) % LLONG_MAX;
             lock(); // Lock self for next iteration
         }
+    }
+
+    TickData getTickData() {
+        std::unique_lock<std::mutex> lock(mtx);
+        TickData data = { coreClock, activeTicks, coreClock - activeTicks };
+        lock.unlock();
+        return data;
     }
 
     void preempt() {

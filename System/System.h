@@ -679,8 +679,8 @@ class System
                 printf("%13s %s\n", "", "idle cpu ticks");
                 printf("%13s %s\n", "", "active cpu ticks");
                 printf("%13s %s\n", "", "total cpu ticks");
-                printf("%13s %s\n", "", "num paged in");
-                printf("%13s %s\n\n", "", "num paged out");
+                printf("%13s %s\n", stats.pagedInCount, "num paged in");
+                printf("%13s %s\n\n", stats.pagedOutCount, "num paged out");
             }
             else {
                 processHistory["Main"].emplace_back("Enter a command: "+ input +"\n", "RESET");

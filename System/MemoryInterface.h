@@ -22,6 +22,8 @@ struct MemoryStats {
     uint64_t processes_in_memory;
     uint64_t totalFragmentation;
     std::vector<ProcessMemory> processMemoryRegions;
+    uint64_t pagedInCount;
+    uint64_t pagedOutCount; 
 };
 
 
@@ -137,7 +139,7 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
 
         MemoryStats computeMemoryStats() override {
             std::unique_lock<std::mutex> lock(mtx);
-            MemoryStats stats = {0, 0, {}};
+            MemoryStats stats = {0, 0, {}, 0, 0};
 
             MemoryChunk *temp;
             temp = memoryStart;
@@ -150,6 +152,9 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
                 }
                 temp = temp->next;
             } while(temp != nullptr);
+
+            stats.pagedInCount = backingStore.getPagedIn();
+            stats.pagedOutCount = backingStore.getPagedOut();
 
             lock.unlock();
             return stats;
@@ -236,6 +241,7 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
             this->freeList->push(memoryStart);
             this->getCurrentTimestamp = getCurrentTimestamp;
             this->cores = cores;
+            this->backingStore.init(false);
         }
 
         void reserve(uint64_t size, std::string processName) override {
@@ -358,6 +364,9 @@ class PagingMemoryInterface: public AbstractMemoryInterface {
             }
 
             stats.processes_in_memory = unique_processes.size();
+            
+            stats.pagedInCount = backingStore.getPagedIn();
+            stats.pagedOutCount = backingStore.getPagedOut();
 
             lock.unlock();
             return stats;
@@ -403,6 +412,7 @@ class PagingMemoryInterface: public AbstractMemoryInterface {
             this->freeList = new FirstFitPagingFreeList(frameSize);
             this->getCurrentTimestamp = getCurrentTimestamp;
             this->cores = cores;
+            this->backingStore.init(true, frameSize);
             
             createChunks();
         }
