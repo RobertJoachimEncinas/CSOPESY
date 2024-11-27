@@ -580,7 +580,6 @@ class System
                     int mem_usage = (memoryRegion->endAddress - memoryRegion->startAddress)+1;
                     memory_usage += mem_usage;
                 }
-
                 int memory_util = static_cast<double>(memory_usage) / memAdd * 100;
                 int cpu_util = static_cast<double>(running_ctr) / totalCores * 100;
                 cpu_util = cpu_util < 0 ? 0 : cpu_util;   
@@ -596,11 +595,15 @@ class System
                 printColored(std::to_string(cpu_util), YELLOW);
                 printColored("%\n", BLUE);
                 std::cout << "Memory Usage: ";
+                // printColored(std::to_string(memory_usage/1024), YELLOW); // convert KB to MiB
+                // printColored("MiB ", YELLOW);
                 printColored(std::to_string(memory_usage), YELLOW);
-                printColored("MiB ", YELLOW);
+                printColored("KB ", YELLOW);
                 printColored("/ ", BLUE);
-                printColored(std::to_string(memAdd), YELLOW);
-                printColored("MiB\n", YELLOW);
+                // printColored(std::to_string(memAdd/1024), YELLOW); // convert KB to MiB
+                // printColored("MiB\n", YELLOW);
+                printColored(std::to_string(memAdd), YELLOW); 
+                printColored("KB\n", YELLOW);
                 std::cout << "Memory Util: ";
                 printColored(std::to_string(memory_util), YELLOW);
                 printColored("%\n", BLUE);
@@ -624,10 +627,12 @@ class System
                 processHistory["Main"].emplace_back("%\n", "BLUE");
                 processHistory["Main"].emplace_back("Memory Usage: ", "RESET");
                 processHistory["Main"].emplace_back(std::to_string(memory_usage), "YELLOW");
-                processHistory["Main"].emplace_back("MiB ", "YELLOW");
+                // processHistory["Main"].emplace_back("MiB ", "YELLOW");
+                processHistory["Main"].emplace_back("KB ", "YELLOW");
                 processHistory["Main"].emplace_back("/ ", "BLUE");
                 processHistory["Main"].emplace_back(std::to_string(memAdd), "YELLOW");
-                processHistory["Main"].emplace_back("MiB\n", "YELLOW");
+                // processHistory["Main"].emplace_back("MiB\n", "YELLOW");
+                processHistory["Main"].emplace_back("KB\n", "YELLOW");
                 processHistory["Main"].emplace_back("Memory Util: ", "RESET");
                 processHistory["Main"].emplace_back(std::to_string(memory_util), "YELLOW");
                 processHistory["Main"].emplace_back("%\n", "BLUE");
