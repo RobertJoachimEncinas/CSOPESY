@@ -121,6 +121,7 @@ class AbstractMemoryInterface {
         }
 
         virtual uint64_t fetchFromBackingStore(std::string process_name) {
+            std::lock_guard<std::mutex> lock(mtx);
             return backingStore.retrieve(process_name);
         }
 
@@ -436,7 +437,7 @@ class PagingMemoryInterface: public AbstractMemoryInterface {
                 allocatedSize += frameSize;
             }
 
-            availableMemory -= size;
+            availableMemory -= allocatedSize;
             
             lock.unlock();
             return allocatedMem;

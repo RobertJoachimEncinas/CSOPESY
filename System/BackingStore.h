@@ -8,12 +8,18 @@
 
 class BackingStore {
     private:
+        std::map<std::string, std::string> bsDirectory;
         const std::string dirPrefix = ".\\BackingStore\\"; 
         std::filesystem::path directory = ".\\BackingStore\\";
         uint64_t pagedInCount;
         uint64_t pagedOutCount;  
         bool isPagingAllocator;
         uint64_t pageSize; 
+        std::mutex mtx;
+        
+        bool isIn(std::string name) {
+            return bsDirectory.find(name) != bsDirectory.end();
+        }
 
     public:
         BackingStore() {
@@ -40,7 +46,13 @@ class BackingStore {
         }
 
         uint64_t retrieve(std::string process_name) {
-            std::string backingStorePath = dirPrefix + process_name + ".txt";
+            std::lock_guard<std::mutex> l(mtx);
+
+            if(!isIn(process_name)) {
+                return 0;
+            }
+
+            std::string backingStorePath = bsDirectory[process_name];
             std::ifstream inputFile(backingStorePath); 
 
             if (!inputFile) {
@@ -57,15 +69,17 @@ class BackingStore {
             }
 
             inputFile.close();
-            remove(backingStorePath.c_str());
+
+            bsDirectory.erase(process_name);
 
             return size;
         }
 
         void store(Process* p) {
+            std::lock_guard<std::mutex> l(mtx);
             std::string backingStorePath = dirPrefix + p->name + ".txt";
             FILE* f = fopen(backingStorePath.c_str(), "w");
-            fprintf(f, "%d", p->memoryRequired);
+            fprintf(f, "%lld", p->memoryRequired);
             fclose(f);
 
             if(this->isPagingAllocator) {
@@ -73,6 +87,8 @@ class BackingStore {
             } else {
                 this->pagedOutCount += 1;
             }
+
+            bsDirectory.insert({p->name, backingStorePath});
         }
 
         uint64_t getPagedIn() {
