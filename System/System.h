@@ -89,7 +89,7 @@ class System
             long long delay_per_exec;
             long long maxMem;
             long long memPerFrame;
-            long long memPerProc;
+            long long minMemPerProc, maxMemPerProc;
             long long limit = (long long)1 << 32;
             bool isFlatAllocator = false; //CHANGE BASED ON CONFIG
 
@@ -226,13 +226,26 @@ class System
                         }
                         break;
                     case 10:
-                        if (tokens[0] != "mem-per-proc") {
+                        if (tokens[0] != "min-mem-per-proc") {
                             std::cout << "Error! Invalid config file. Line " << i << "\n";
                             processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                             return;
                         }
-                        memPerProc = std::stoll(tokens[1]);
-                        if (memPerProc < 2 || memPerProc > limit) {
+                        minMemPerProc = std::stoll(tokens[1]);
+                        if (minMemPerProc < 2 || minMemPerProc > limit) {
+                            std::cout << "Error! Invalid memory per process.\n";
+                            processHistory["Main"].emplace_back("Error! Invalid memory per process.\n", "RESET");
+                            return;
+                        }
+                        break;
+                    case 11:
+                        if (tokens[0] != "max-mem-per-proc") {
+                            std::cout << "Error! Invalid config file. Line " << i << "\n";
+                            processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
+                            return;
+                        }
+                        maxMemPerProc = std::stoll(tokens[1]);
+                        if (maxMemPerProc < 2 || maxMemPerProc > limit) {
                             std::cout << "Error! Invalid memory per process.\n";
                             processHistory["Main"].emplace_back("Error! Invalid memory per process.\n", "RESET");
                             return;
@@ -261,7 +274,9 @@ class System
             processMaxIns = max_ins;
             processMinIns = min_ins;
             processFreq = process_freq;
-            memoryPerProcess = memPerProc;
+            int memoryPerProcess = pow(2, static_cast<int>(log2(minMemPerProc)) + 
+                                   rand() % (static_cast<int>(log2(maxMemPerProc) - log2(minMemPerProc) + 1)));
+
             
             boot();
             isInitialized = true;
