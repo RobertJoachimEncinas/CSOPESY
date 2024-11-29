@@ -257,13 +257,11 @@ class FlatMemoryInterface: public AbstractMemoryInterface {
                     break;
                 }
 
-                if(p->core != -1 && !p->completed) {
-                    cores->at(p->core)->preempt();
-                } else if(p->core != -1 && p->completed) {
+                if(p->core != -1 && p->completed) {
                     cores->at(p->core)->finish();
+                } else {
+                    backingStore.store(p);
                 }
-
-                backingStore.store(p);
 
                 for(const auto& memory: p->allocatedMemory) {
                     nonLockingFree(memory);
