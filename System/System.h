@@ -89,7 +89,7 @@ class System
             long long min_ins;
             long long max_ins;
             long long delay_per_exec;
-            long long max_mem;
+            long long max_overall_mem;
             long long mem_per_frame;
             long long min_mem_per_proc, max_mem_per_proc;
             long long limit = (long long)1 << 32;
@@ -207,8 +207,8 @@ class System
                             processHistory["Main"].emplace_back("Error! Invalid config file. Line " + std::to_string(i) + "\n", "RESET");
                             return;
                         }
-                        max_mem = std::stoll(tokens[1]);
-                        if (max_mem < 2 || max_mem > limit) {
+                        max_overall_mem = std::stoll(tokens[1]);
+                        if (max_overall_mem < 2 || max_overall_mem > limit) {
                             std::cout << "Error! Invalid maximum overall memory.\n";
                             processHistory["Main"].emplace_back("Error! Invalid maximum overall memory.\n", "RESET");
                             return;
@@ -247,7 +247,6 @@ class System
                             return;
                         }
                         max_mem_per_proc = std::stoll(tokens[1]);
-                    
                         if (max_mem_per_proc < 2 || max_mem_per_proc > limit) {
                             std::cout << "Error! Invalid memory per process.\n";
                             processHistory["Main"].emplace_back("Error! Invalid memory per process.\n", "RESET");
@@ -256,15 +255,13 @@ class System
                         break;
                 }
             }
-
-            isFlatAllocator = max_mem == mem_per_frame;
             
-            if(isFlatAllocator) {
-                memAdd = max_mem;
-                memory = new FlatMemoryInterface(max_mem, getCurrentTimestamp, std::addressof(cores));
+            if(max_overall_mem == mem_per_frame) {
+                memAdd = max_overall_mem;
+                memory = new FlatMemoryInterface(max_overall_mem, getCurrentTimestamp, std::addressof(cores));
             } else {
-                memAdd = max_mem;
-                memory = new PagingMemoryInterface(max_mem, mem_per_frame, getCurrentTimestamp, std::addressof(cores));
+                memAdd = max_overall_mem;
+                memory = new PagingMemoryInterface(max_overall_mem, mem_per_frame, getCurrentTimestamp, std::addressof(cores));
             }
 
             scheduler.setMemoryInterface(memory);
@@ -496,7 +493,6 @@ class System
 
                     return;
                 } 
-                
             }
             else if (command == "clear") {
                 processHistory["Main"].clear();
@@ -506,7 +502,7 @@ class System
                 terminate();
                 std::exit(0);
             }
-            else if (command == "initialize" || command == "init") {
+            else if (command == "initialize") {
                 processHistory["Main"].emplace_back("Enter a command: initialize\n", "RESET");
                 cmd_initialize();
             }
@@ -550,7 +546,7 @@ class System
                     processHistory["Main"].emplace_back("Error! Correct usage: screen -s <process_name> or screen -r <process_name> or screen -ls\n", "RESET");
                 }
             }
-            else if (command == "scheduler-test" || command == "st") {
+            else if (command == "scheduler-test") {
                 processHistory["Main"].emplace_back("Enter a command: scheduler-test\n", "RESET");
 
                 if(!isInitialized) {
@@ -560,7 +556,7 @@ class System
                 }
                 cmd_scheduler_test();
             }
-            else if (command == "scheduler-stop" || command == "ss") {
+            else if (command == "scheduler-stop") {
                 processHistory["Main"].emplace_back("Enter a command: scheduler-stop\n", "RESET");
 
                 if(!isInitialized) {
@@ -676,8 +672,7 @@ class System
 
                     // processHistory
                     processHistory["Main"].emplace_back(std::to_string(total_memory), "YELLOW");
-                    processHistory["Main"].emplace_back("MiB\n", "YELLOW");
-                    // std::cout << memoryRegion->endAddress << "\n" << memoryRegion->process_name << "\n" << memoryRegion->startAddress << "\n\n";                
+                    processHistory["Main"].emplace_back("MiB\n", "YELLOW");     
                 }
                 printColored("--------------------------------------------------\n\n", BLUE);
                 processHistory["Main"].emplace_back("--------------------------------------------------\n\n", "BLUE");
