@@ -5,6 +5,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
+#include <cmath>
 
 class Tester 
 {
@@ -21,13 +22,15 @@ class Tester
         long long processIdCounter;
         long long* processMinIns;
         long long* processMaxIns;
+        long long* processMaxMem;
+        long long* processMinMem;
         long long* memoryPerProcess;
         std::string (*getCurrentTimestamp)();
         Scheduler* scheduler;
         AbstractMemoryInterface* memory;
 
     public:    
-        Tester(std::atomic<long long>* currentSystemClock, long long* processFreq, std::map<std::string, std::shared_ptr<Process>>* processes, long long *processMinIns, long long *processMaxIns, std::string (*getCurrentTimestamp)(), Scheduler* scheduler, long long* memoryPerProcess) {
+        Tester(std::atomic<long long>* currentSystemClock, long long* processFreq, std::map<std::string, std::shared_ptr<Process>>* processes, long long *processMinIns, long long *processMaxIns, std::string (*getCurrentTimestamp)(), Scheduler* scheduler, long long* processMinMem, long long* processMaxMem) {
             this->currentSystemClock = currentSystemClock;
             this->testerClock = 0;
             this->active.store(false);
@@ -38,9 +41,10 @@ class Tester
             this->processIdCounter = 0;
             this->processMinIns = processMinIns;
             this->processMaxIns = processMaxIns;
+            this->processMinMem = processMinMem;
+            this->processMaxMem = processMaxMem;
             this->getCurrentTimestamp = getCurrentTimestamp;
             this->scheduler = scheduler;
-            this->memoryPerProcess = memoryPerProcess;
         }
 
         void start() {
@@ -71,8 +75,16 @@ class Tester
                     }
                     // Set random number of instructions
                     long long instructions = *processMinIns + (rand() % (*processMaxIns - *processMinIns + 1));
-                    // If no duplicates, create and add the new process
-                    std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), *memoryPerProcess);
+                    // Set random memory per process
+                    int minPower = 0, maxPower = 0;
+                    while ((1LL << minPower) < *processMinMem)
+                        minPower++;
+                    while ((1LL << maxPower) < *processMaxMem)
+                        maxPower++;
+                    int randomPower = minPower + rand() % (maxPower - minPower + 1);
+                    long long memoryPerProcess = 1LL << randomPower;
+                    // Create new Process
+                    std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), memoryPerProcess);
                     processes->insert(std::make_pair(process_name, newProcess));
                 
                     //Add to scheduler
