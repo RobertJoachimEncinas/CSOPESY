@@ -254,6 +254,8 @@ class System
                 }
             }
 
+            isFlatAllocator = maxMem == memPerFrame;
+            
             if(isFlatAllocator) {
                 memAdd = maxMem;
                 memory = new FlatMemoryInterface(maxMem, getCurrentTimestamp, std::addressof(cores));
@@ -274,8 +276,8 @@ class System
             processMaxIns = max_ins;
             processMinIns = min_ins;
             processFreq = process_freq;
-            int memoryPerProcess = pow(2, static_cast<int>(log2(minMemPerProc)) + 
-                                   rand() % (static_cast<int>(log2(maxMemPerProc) - log2(minMemPerProc) + 1)));
+            memoryPerProcess = pow(2, static_cast<int>(log2(minMemPerProc)) + 
+                                rand() % (static_cast<int>(log2(maxMemPerProc) - log2(minMemPerProc) + 1)));
 
             
             boot();
