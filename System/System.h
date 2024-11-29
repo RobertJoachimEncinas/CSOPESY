@@ -668,11 +668,11 @@ class System
                     int total_memory = (memoryRegion->endAddress - memoryRegion->startAddress)+1;
                     std::cout << memoryRegion->process_name << " ";
                     printColored(std::to_string(total_memory), YELLOW);
-                    printColored("MiB\n", YELLOW);
+                    printColored("KB\n", YELLOW);
 
                     // processHistory
                     processHistory["Main"].emplace_back(std::to_string(total_memory), "YELLOW");
-                    processHistory["Main"].emplace_back("MiB\n", "YELLOW");     
+                    processHistory["Main"].emplace_back("KB\n", "YELLOW");     
                 }
                 printColored("--------------------------------------------------\n\n", BLUE);
                 processHistory["Main"].emplace_back("--------------------------------------------------\n\n", "BLUE");
