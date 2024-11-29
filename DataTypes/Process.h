@@ -27,14 +27,15 @@ class Process {
         int core;
         std::string logFilePath;
         int id;
-        static int last_id;
+        static int last_id; 
         long long memoryRequired;
         std::vector<AllocatedMemory*> allocatedMemory;
         time_t age;
 
         Process() {}
 
-        Process(std::string name, long long total_instructions, std::string timestamp, long long memoryRequired) {
+        Process(std::string name, long long total_instructions, 
+                std::string timestamp, long long memoryRequired) {
             this->name = name;
             this->id = last_id++;
             this->current_instruction = 0;
@@ -48,10 +49,8 @@ class Process {
             this->age = convertToTime(timestamp);
 
             // FILE* f = fopen(logFilePath.c_str(), "w");
-
             // fprintf(f, "Process name: %s\n", name.c_str());
             // fprintf(f, "Logs:\n\n");
-
             // fclose(f);
         }
 

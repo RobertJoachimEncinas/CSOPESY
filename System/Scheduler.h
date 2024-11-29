@@ -64,7 +64,9 @@ class Scheduler {
 
                 for(int i = 0; i < cores->size(); i++) {
                     if(readyQueue.isEmpty()) {
-                        break; //Ready queue for this time step has all been dispatch already, process anything from screen -s that was not synced in the next timestep
+                        break; 
+                        //Ready queue for this time step has all been dispatch already, 
+                        //process anything from screen -s that was not synced in the next timestep
                     } 
 
                     if(!((*cores->at(i)).isActive())) { //Check if the core is free
