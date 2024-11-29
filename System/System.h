@@ -13,6 +13,7 @@
 #include <ctime>
 #include <iomanip>
 #include <memory>
+#include <cmath>
 #include "MemoryInterface.h"
 
 class System
