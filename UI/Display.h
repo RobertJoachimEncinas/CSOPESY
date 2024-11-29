@@ -63,9 +63,6 @@ std::vector<std::pair<std::string, std::string>> printProcesses(int totalCores, 
         printf("%-11s %-30s Core: %-3s      %d / %d\n", process.name.c_str(), ("(" + process.timestamp + ")").c_str(), inCore.c_str(), process.current_instruction, process.total_instructions);
         std::string name = process.name;
         std::string timestamp = process.timestamp+")";
-        //TODO: Remove this debug line
-        std::cout << process.allocatedMemory.size() << "\n";
-        
         if (name.length() > 12) {
             name = name.substr(0, 12); 
         } else {

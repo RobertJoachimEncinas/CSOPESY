@@ -95,7 +95,7 @@ class System
             long long limit = (long long)1 << 32;
             bool isFlatAllocator = false; //CHANGE BASED ON CONFIG
 
-            for (int i = 1; i <= 10; i++) {
+            for (int i = 1; i <= 11; i++) {
                 char buffer[256];
                 fgets(buffer, 256, f);
                 std::vector<std::string> tokens = tokenizeInput(buffer);
@@ -247,8 +247,7 @@ class System
                             return;
                         }
                         max_mem_per_proc = std::stoll(tokens[1]);
-                        //TODO: Remove debug line
-                        std::cout<<"INIT"<<max_mem_per_proc<<"\n";
+                    
                         if (max_mem_per_proc < 2 || max_mem_per_proc > limit) {
                             std::cout << "Error! Invalid memory per process.\n";
                             processHistory["Main"].emplace_back("Error! Invalid memory per process.\n", "RESET");
@@ -281,8 +280,6 @@ class System
             processMinIns = min_ins;
             processFreq = process_freq;
             processMaxMem = max_mem_per_proc;
-            //TODO: Remove debug line
-            std::cout << "MAX MEM PER PROC: " << max_mem_per_proc << "\n";
             processMinMem = min_mem_per_proc;
             
             boot();
@@ -338,16 +335,14 @@ class System
         }
 
         void cmd_clear() {
-            //TODO: UNCOMMENT
-            //system("cls");
+            system("cls");
             printHeader();
             cmd_display_history("Main");
         }
 
         void cmd_screen(Process process) {
             isInMainConsole = false; // Set flag to false
-            //TODO: UNCOMMENT
-            //system("cls");
+            system("cls");
             cmd_display_history(process.name);
 
             std::ostringstream output; 
@@ -411,20 +406,8 @@ class System
             // Set random number of instructions
             long long instructions = processMinIns + (rand() % (processMaxIns - processMinIns + 1));
             // Set random memory per process
-            int minPower = 0, maxPower = 0;
-            while ((1LL << minPower) < processMinMem)
-                minPower++;
-            while ((1LL << maxPower) < processMaxMem)
-                maxPower++;
-            int randomPower = minPower + rand() % (maxPower - minPower + 1);
-            long long memoryPerProcess = 1LL << randomPower;
-            //TODO: Remove debug line
-            std::cout << "Memory per process: " << memoryPerProcess << "\n";
-            std::cout << "Random power: " << randomPower << "\n";
-            std::cout << "Min mem per proc: " << processMinMem << "\n";
-            std::cout << "Min power: " << minPower << "\n";
-            std::cout << "Max mem per proc: " << processMaxMem << "\n";
-            std::cout << "Max power: " << maxPower << "\n";
+            long long memoryPerProcess = static_cast<long long>(pow(2, static_cast<int>(log2(processMinMem)) + 
+                                                                rand() % (static_cast<int>(log2(processMaxMem) - log2(processMinMem) + 1))));
             // If no duplicates, create and add the new process
             std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), memoryPerProcess);
             processes.insert(std::make_pair(process_name, newProcess));

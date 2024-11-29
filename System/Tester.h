@@ -76,13 +76,8 @@ class Tester
                     // Set random number of instructions
                     long long instructions = *processMinIns + (rand() % (*processMaxIns - *processMinIns + 1));
                     // Set random memory per process
-                    int minPower = 0, maxPower = 0;
-                    while ((1LL << minPower) < *processMinMem)
-                        minPower++;
-                    while ((1LL << maxPower) < *processMaxMem)
-                        maxPower++;
-                    int randomPower = minPower + rand() % (maxPower - minPower + 1);
-                    long long memoryPerProcess = 1LL << randomPower;
+                    long long memoryPerProcess = static_cast<long long>(pow(2, static_cast<int>(log2(*processMinMem)) + 
+                                                                rand() % (static_cast<int>(log2(*processMaxMem) - log2(*processMinMem) + 1))));
                     // Create new Process
                     std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), memoryPerProcess);
                     processes->insert(std::make_pair(process_name, newProcess));
