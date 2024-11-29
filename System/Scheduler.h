@@ -54,10 +54,10 @@ class Scheduler {
                         }
 
                         p->allocatedMemory = {};
-
-                        memory->removeFromProcessList(p);
+                        memory->removeFromProcessList(process);
                     } else if(cores->at(i)->getShouldPreempt()) {
-                        cores->at(i)->preempt();
+                        Process* p = cores->at(i)->preempt();
+                        memory->addToProcessList(p); // Add back as it is freeable now
                     }
                 }
 
@@ -84,7 +84,7 @@ class Scheduler {
                             enqueue(process);
                         } else {
                             (*cores->at(i)).assignProcess(process);
-                            memory->addToProcessList(process);
+                            memory->removeFromProcessList(process);
                         }
                     }     
                 }

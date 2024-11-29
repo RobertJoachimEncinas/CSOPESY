@@ -112,14 +112,15 @@ public:
         return data;
     }
 
-    void preempt() {
+    Process* preempt() {
         std::unique_lock<std::mutex> lock(mtx);
         readyQueue->push(currentProcess);
-        removeFromCore();
+        Process* p = removeFromCore();
         coreQuantumCountdown = quantumCycles;
         processCompleted.store(false);
         shouldPreempt.store(false);
         lock.unlock();
+        return p;
     }
 
     Process* finish() {
