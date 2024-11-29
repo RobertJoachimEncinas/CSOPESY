@@ -15,6 +15,7 @@ class Scheduler {
         std::atomic<long long>* currentSystemClock;
         std::mutex mtx;
         AbstractMemoryInterface* memory;
+        bool isFCFS = false;
 
     public:
         Scheduler(std::vector<Core*>* cores, std::atomic<long long>* currentSystemClock) {
@@ -67,7 +68,7 @@ class Scheduler {
                     } 
 
                     if(!((*cores->at(i)).isActive())) { //Check if the core is free
-                        process = readyQueue.pop();
+                        process = readyQueue.peek();
 
                         if(process->allocatedMemory.size() == 0) {
                             uint64_t memoryRequirement = memory->fetchFromBackingStore(process->name);
@@ -81,10 +82,14 @@ class Scheduler {
                         }
 
                         if(process->allocatedMemory.size() == 0) {
-                            enqueue(process);
+                            if(!isFCFS) {
+                                readyQueue.pop();
+                                enqueue(process);
+                            }
                         } else {
                             (*cores->at(i)).assignProcess(process);
                             memory->removeFromProcessList(process);
+                            readyQueue.pop();
                         }
                     }     
                 }
@@ -117,5 +122,9 @@ class Scheduler {
         long long getTime() {
             std::lock_guard<std::mutex> lock(mtx);
             return this->schedulerClock;
+        }
+
+        void setIsFCFS(bool isFCFS) {
+            this->isFCFS = isFCFS;
         }
 };

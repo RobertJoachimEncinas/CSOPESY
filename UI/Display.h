@@ -83,7 +83,7 @@ std::vector<std::pair<std::string, std::string>> printProcesses(int totalCores, 
     returnOutput.push_back(std::make_pair("\nFinished Processes:\n", "RESET"));
 
     for (const auto& process : completedProcesses) {
-        printf("%-11s %-30s Finished       %d / %d Core: %d\n", process.name.c_str(), ("(" + process.timestamp + ")").c_str(), process.current_instruction, process.total_instructions, process.core);
+        printf("%-11s %-30s Finished       %d / %d \n", process.name.c_str(), ("(" + process.timestamp + ")").c_str(), process.current_instruction, process.total_instructions);
         std::string name = process.name;
         std::string timestamp = process.timestamp+")";
         

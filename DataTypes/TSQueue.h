@@ -13,17 +13,22 @@ class TSQueue {
         std::condition_variable cv;
 
     public:
-        Process* pop() {
+        void pop() {
+            std::unique_lock<std::mutex> l(mtx);
+            queue.pop();
+            l.unlock();
+        }
+
+        Process* peek() {
             Process* p;
             std::unique_lock<std::mutex> l(mtx);
             cv.wait(l, [this] { return !queue.empty();});
 
             p = queue.front();
-            queue.pop();
             
             l.unlock();
 
-            return p;
+            return p;   
         }
 
         void push(Process* p) {

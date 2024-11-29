@@ -130,6 +130,11 @@ class AbstractMemoryInterface {
         virtual MemoryStats getMemoryStats() {
             return computeMemoryStats();
         }
+
+        virtual uint64_t getAvailableMemory() {
+            std::lock_guard<std::mutex> lock(mtx);
+            return availableMemory;
+        }
 };
 
 class FlatMemoryInterface: public AbstractMemoryInterface {

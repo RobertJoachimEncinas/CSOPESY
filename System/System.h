@@ -275,7 +275,10 @@ class System
             for(int i = 0; i < num_cpu; i++) {
                 cores.push_back(new Core(i, quantum_cycles, synchronizer.getSyncClock(), this->getCurrentTimestamp, algorithm, delay_per_exec));
             }
+
             scheduler.assignReadyQueueToCores();
+            scheduler.setIsFCFS(algorithm == FCFS);
+
             processMaxIns = max_ins;
             processMinIns = min_ins;
             processFreq = process_freq;
