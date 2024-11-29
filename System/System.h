@@ -28,6 +28,7 @@ class System
         long long processMaxIns = 100;
         long long processFreq = 1;
         long long memoryPerProcess = 0;
+        long long 
         int memAdd = 0;
         MemoryStats computeMemoryStats();
 
@@ -277,9 +278,6 @@ class System
             processMaxIns = max_ins;
             processMinIns = min_ins;
             processFreq = process_freq;
-            memoryPerProcess = pow(2, static_cast<int>(log2(minMemPerProc)) + 
-                                rand() % (static_cast<int>(log2(maxMemPerProc) - log2(minMemPerProc) + 1)));
-
             
             boot();
             isInitialized = true;
@@ -404,6 +402,9 @@ class System
             }
             // Set random number of instructions
             long long instructions = processMinIns + (rand() % (processMaxIns - processMinIns + 1));
+            // Set random memory per process
+            memoryPerProcess = pow(2, static_cast<int>(log2(minMemPerProc)) + 
+                                rand() % (static_cast<int>(log2(maxMemPerProc) - log2(minMemPerProc) + 1)));
             // If no duplicates, create and add the new process
             std::shared_ptr<Process> newProcess = std::make_shared<Process>(process_name, instructions, getCurrentTimestamp(), memoryPerProcess);
             processes.insert(std::make_pair(process_name, newProcess));
